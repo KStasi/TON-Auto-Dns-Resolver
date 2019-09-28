@@ -1,0 +1,85 @@
+(cell, int) find_subdomain(cell dns_table, slice domain_name) impure {
+  return (new_dict(), 0);
+}
+
+() dnsregistrar(slice domain_name, int category, int magic_number, slice identifier, slice owner, int expiration_time, int cashing_time) impure {
+  ;; load dns_table
+  slice cs = get_data().begin_parse();
+  cell dns_table = cs~load_dict();
+  cs.end_parse();
+  
+  ;; if no table exist, create
+  if (dns_table.null?()) {
+    dns_table = new_dict();
+  }
+
+  ;; check if domain_name exist
+  var (ct, found) = find_subdomain(dns_table, domain_name);
+  if (found) {
+    (var existed_rd, found) = ct.idict_get?(16, category);
+    if (found) {
+      var (_, _, _, cur_expiration_time, cur_cashing_time) = (cs~load_int(16), cs~load_bits(256), cs~load_bits(256), cs~load_uint(32), cs~load_uint(32));
+      if (cur_expiration_time < now()){
+        return ();
+      }
+    }
+  }
+
+  ;; create dns_record
+  var dr = begin_cell()
+    .store_int(magic_number, 16)
+    .store_slice(identifier)
+    .store_slice(owner)
+    .store_uint(expiration_time, 32)
+    .store_uint(cashing_time, 32);
+
+  ;; add dns_record
+  var new_ct = new_dict();
+  new_ct~idict_set_builder(16, category, dr);
+
+  ;; update new dns_category
+  dns_table~dict_set_builder(18, domain_name, begin_cell()
+    .store_dict(new_ct));
+  
+  ;; set new dns_table
+  set_data(begin_cell()
+  .store_dict(dns_table)
+  .end_cell());
+}
+
+;; Impure methods
+
+() recv_internal(cell in_msg) impure {
+  ;; do nothing for internal messages
+}
+
+() recv_external(slice in_msg) impure {
+  var signature = in_msg~load_bits(512);
+  var cs = in_msg;
+  var (msg_seqno, valid_until) = (cs~load_uint(32), cs~load_uint(32));
+  throw_if(35, valid_until < now());
+  var ds = get_data().begin_parse();
+  var (stored_seqno, public_key) = (ds~load_uint(32), ds~load_uint(256));
+  ds.end_parse();
+  throw_unless(33, msg_seqno == stored_seqno);
+  throw_unless(34, check_signature(slice_hash(in_msg), signature, public_key));
+  accept_message();
+  ;; while (cs.slice_refs()) {
+  ;;  var mode = cs~load_uint(8);
+  ;;   send_raw_message(cs~load_ref(), mode);
+  ;; }
+  cs.end_parse();
+  set_data(begin_cell().store_uint(stored_seqno + 1, 32).store_uint(public_key, 256).end_cell());
+}
+
+
+;; Get methods
+
+(int, cell) dnsresolve(slice subdomain, int category) method_id {
+    return (0, get_data());
+}
+
+int seqno() method_id {
+  return get_data().begin_parse().preload_uint(32);
+}
+
