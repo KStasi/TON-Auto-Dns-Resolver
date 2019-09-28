@@ -1,0 +1,12 @@
+# start client
+./lite-client -C ton-lite-client-test1.config.json
+
+# in client console
+## update state
+last
+
+## get account
+getaccount ADDRESS
+
+## code spec
+udict_get? -> (res_slice, isFound)
