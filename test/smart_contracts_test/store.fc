@@ -1,5 +1,71 @@
-(cell, int) find_subdomain(cell dns_table, slice domain_name) impure {
-  return (new_dict(), 0);
+(int, cell) find_subdomain(slice dn, int category) method_id(0x7265736c) {
+  ;; load dnst
+  slice cs = get_data().begin_parse();
+  cell dnst = cs~load_dict();
+  cs.end_parse();
+
+  ;; if no table exist, create
+  if (dnst.null?()) {
+    return (0, dnst);
+  }
+
+  int n = 0;
+  int n_max = 0;
+  slice dn_ref = dn;
+  cell dn_max = dnst;
+  cell dnst_ref = dnst;
+
+  do {
+    ;; look for sumbol
+    int sumb = dn_ref~load_int(8);
+    (slice res, int f) = dnst_ref.idict_get?(8, sumb);
+    ifnot (f) {
+      ifnot (n_max == 0) {
+        ;; try involve next resolver
+        (res, f) = dn_max.idict_get?(16, -1);
+        if (f) {
+          ;; get address
+          (int magic_number, slice identifier) = (res~load_int(16), res~load_bits(256));
+          
+          ;; create msg
+          ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 010
+          ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
+          ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
+          ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
+          slice msg_body = skip_bits(dn, n_max);
+          var msg = begin_cell()
+            .store_uint(0x08, 6)
+            .store_slice(identifier)
+            .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
+            .store_uint(magic_number, 32)
+            .store_slice(msg_body)
+            .end_cell();
+          send_raw_message(msg, 0);
+        }
+      }
+    } else {
+      ;; increment if found
+      n = n + 1;
+      dnst_ref = res~load_dict();
+
+      ;; check if it is known subdomain
+      (slice end, int f) = dnst_ref.idict_get?(8, 0);
+      if (f) {
+        ;; remember last found subdomain
+        dn_max = end~load_dict();
+        n_max = n;
+      }
+      ;; if subdomain fully matches return result
+      if (sumb == 0) {
+        dnst_ref = end~load_dict();
+        ifnot (category == 0) {
+          dnst_ref = dnst_ref.idict_get_ref(16, category);
+        }
+        return (n, dnst_ref);
+      }
+    }
+  } until (~ f);  
+  return (0, new_dict());
 }
 
 () dnsregistrar(slice domain_name, int category, int magic_number, slice identifier, slice owner, int expiration_time, int cashing_time) impure {
@@ -14,16 +80,7 @@
   }
 
   ;; check if domain_name exist
-  var (ct, found) = find_subdomain(dns_table, domain_name);
-  if (found) {
-    (var existed_rd, found) = ct.idict_get?(16, category);
-    if (found) {
-      var (_, _, _, cur_expiration_time, cur_cashing_time) = (cs~load_int(16), cs~load_bits(256), cs~load_bits(256), cs~load_uint(32), cs~load_uint(32));
-      if (cur_expiration_time < now()){
-        return ();
-      }
-    }
-  }
+  ;; var (ct, found) = find_subdomain(dns_table, domain_name);
 
   ;; create dns_record
   var dr = begin_cell()
@@ -35,10 +92,10 @@
 
   ;; add dns_record
   var new_ct = new_dict();
-  new_ct~idict_set_builder(16, category, dr);
+  new_ct~idict_set_builder(8, category, dr);
 
   ;; update new dns_category
-  dns_table~dict_set_builder(18, domain_name, begin_cell()
+  dns_table~idict_set_builder(8, 0, begin_cell()
     .store_dict(new_ct));
   
   ;; set new dns_table
@@ -49,8 +106,32 @@
 
 ;; Impure methods
 
-() recv_internal(cell in_msg) impure {
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
   ;; do nothing for internal messages
+  var cs = in_msg_cell.begin_parse();
+  var flags = cs~load_uint(4);
+  if (flags & 1) {
+    ;; ignore all bounced messages
+    return ();
+  }
+  var s_addr = cs~load_msg_addr();
+  if (in_msg.slice_empty?()) {
+    ;; inbound message has empty body
+    return ();
+  }
+  int op = in_msg~load_uint(32);
+  if (op == 0) {
+    ;; simple transfer with comment, return
+    return ();
+  }
+  int query_id = in_msg~load_uint(64);
+  if (op == 0x726567) {
+    ;; registar
+    ;; return dnsregistrar(s_addr, msg_value, in_msg, query_id);
+    return ();
+  }
+  ;; unknown answer, ignore
+  return ();
 }
 
 () recv_external(slice in_msg) impure {
@@ -74,10 +155,6 @@
 
 
 ;; Get methods
-
-(int, cell) dnsresolve(slice subdomain, int category) method_id {
-    return (0, get_data());
-}
 
 int seqno() method_id {
   return get_data().begin_parse().preload_uint(32);

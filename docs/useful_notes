@@ -8,3 +8,7 @@ runmethod kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny seqno
 # function layout
 
 recv_internal - main
+
+# msg types
+
+3.3.3. Descriptor of an outbound message in tblkch
