@@ -127,19 +127,19 @@
   }
 
   ;; create dns_record
-  var dr = begin_cell()
+  cell dr = begin_cell()
     .store_int(mn, 32)
     .store_slice(i)
     .store_slice(ow)
     .store_uint(et, 32)
-    .store_uint(ct, 32);
+    .store_uint(ct, 32)
+    .end_cell();
 
   ;; add dns_record
-  new_ct~idict_set_builder(16, c, dr);
+  new_ct~idict_set_ref(16, c, dr);
 
   ;; update new dns_category
-  dnst~idict_set_builder(8, 0, begin_cell()
-    .store_dict(new_ct));
+  dnst~prxdict_set(dn_len, dn, new_ct.begin_parse());
   
   ;; set new dnst
   set_data(begin_cell()
