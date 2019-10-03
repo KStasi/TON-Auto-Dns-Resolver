@@ -1,0 +1,222 @@
+;; KStasi library for funC
+;;
+
+(slice, slice, slice, int) prxdict_getq(cell dict, int key_len, slice index) asm(index dict key_len) "PFXDICTGETQ" "NULLSWAPIFNOT" "NULLSWAPIFNOT";
+(cell, int) prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
+(cell, (int)) ~prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
+
+(int, cell) find_subdomain(int dn_len, slice dn, int c) {
+  ;; load dnst
+  slice cs = get_data().begin_parse();
+  int stored_seqno = cs~load_uint(32);
+  cell dnst = cs~load_dict();
+  cs.end_parse();
+
+  ;; if no table exist, create
+  if (dnst.null?()) {
+    return (0, dnst);
+  }
+
+  ;; get the longest subdomain prefix
+  (slice prx, slice val, slice rm, var f) = prxdict_getq(dnst, dn_len, dn);
+  if (f) {
+      ;; substract hashmap
+      cell hshm = val~load_dict();
+      if (hshm.null?()) {
+        return (0, hshm);
+      }
+
+      ;; the whole domain found
+      if (rm.slice_empty?()) {
+        if (c == 0) {
+          return (dn_len, hshm);
+        }
+        cell dns_record = hshm.idict_get_ref(16, c);
+        return (dn_len, dns_record);
+      }
+      
+      ;; try to find next dns resolver
+      cell nxt_rsl = hshm.idict_get_ref(16, -1);
+      
+      if (nxt_rsl.null?()) {
+        ;; resolver not found
+        return (0, nxt_rsl);
+      }
+
+      ;; look for methods
+      slice rsl = nxt_rsl.begin_parse();
+      (int magic_number, slice identifier) = (rsl~load_int(32), rsl~load_bits(256));
+      
+      ;; create msg
+      ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 10 010
+      ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
+      ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
+      ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
+      slice msg_body = begin_cell()
+        .store_slice(rm)
+        .store_int(c, 16)
+        .end_cell()
+        .begin_parse();
+      var msg = begin_cell()
+        .store_uint(0x88, 7)
+        .store_slice(identifier)
+        .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
+        .store_uint(magic_number, 32)
+        .store_slice(msg_body)
+        .end_cell();
+      send_raw_message(msg, 0);
+
+      ;; fix len
+      return (0, nxt_rsl);
+  }
+  return (0, new_dict());
+}
+
+() dnsregistrar(int dn_len, slice dn, int c, int mn, slice i, slice ow, int et, int ct) impure {
+  ;; load dnst
+  slice cs = get_data().begin_parse();
+  int stored_seqno = cs~load_uint(32);
+  cell dnst = cs~load_dict();
+  cs.end_parse();
+
+  ;; if no table exist, create
+  if (dnst.null?()) {
+    dnst = new_dict();
+  }
+
+  ;; check if domain_name exist
+  var (f, hshm) = find_subdomain(dn_len, dn, 0);
+  cell new_ct = new_dict();
+  if (f) {
+    ;; send to rslv
+    cell rcd = hshm.idict_get_ref(16, c);
+    if (rcd.null?()) {
+      return();
+    }
+    rcd = hshm.idict_get_ref(16, -1);
+    if (rcd.null?() != 1) {
+      slice srcd = rcd.begin_parse();
+      (int magic_number, slice identifier) = (srcd~load_int(32), srcd~load_bits(256));
+  
+      ;; create msg
+      ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 010
+      ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
+      ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
+      ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
+      slice msg_body = begin_cell()
+        .store_int(dn_len, 32)
+        .store_slice(dn)
+        .store_int(c, 16)
+        .store_int(mn, 32)
+        .store_slice(i)
+        .store_slice(ow)
+        .store_uint(et, 32)
+        .store_uint(ct, 32)
+        .end_cell()
+        .begin_parse();
+
+      var msg = begin_cell()
+        .store_uint(0x08, 6)
+        .store_slice(identifier)
+        .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
+        .store_uint(magic_number, 32)
+        .store_slice(msg_body)
+        .end_cell();
+      send_raw_message(msg, 0);
+      return ();
+    }
+    new_ct = hshm;
+  }
+
+  ;; create dns_record
+  cell dr = begin_cell()
+    .store_int(mn, 32)
+    .store_slice(i)
+    .store_slice(ow)
+    .store_uint(et, 32)
+    .store_uint(ct, 32)
+    .end_cell();
+
+  ;; add dns_record
+  new_ct~idict_set_ref(16, c, dr);
+
+  ;; update new dns_category
+  dnst~prxdict_set(dn_len, dn, new_ct.begin_parse());
+  
+  ;; set new dnst
+  set_data(begin_cell()
+  .store_uint(stored_seqno + 1, 32)
+  .store_dict(dnst)
+  .end_cell());
+}
+
+;; Impure methods
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+  ;; do nothing for internal messages
+  var cs = in_msg_cell.begin_parse();
+  var flags = cs~load_uint(4);
+  if (flags & 1) {
+    ;; ignore all bounced messages
+    return ();
+  }
+  var s_addr = cs~load_msg_addr();
+  if (in_msg.slice_empty?()) {
+    ;; inbound message has empty body
+    return ();
+  }
+  int op = in_msg~load_uint(32);
+  if (op == 0) {
+    ;; simple transfer with comment, return
+    return ();
+  }
+  int query_id = in_msg~load_uint(64);
+  int dn_len = in_msg~load_uint(16);
+  slice dn = in_msg~load_bits(dn_len);
+  int c = in_msg~load_uint(16);
+  if (op == 0x7265736c) {
+    ;; slice domain_name, int category
+    find_subdomain(dn_len, dn, c);
+    return ();
+  }
+  int mn = in_msg~load_uint(32);
+  slice i = in_msg~load_bits(256);
+  slice ow = in_msg~load_bits(256);
+  int et = in_msg~load_uint(64);
+  int ct = in_msg~load_uint(64);
+  ;; check if valid
+  
+  if (op == 0x726567) {
+    return dnsregistrar(dn_len, dn, c, mn, i, ow, et, ct);
+  }
+  if (op == 0x7265736c) {
+    ;; return modify(dn, c, mn, i, ow, et, ct);
+  }
+  ;; unknown answer, ignore
+  return ();
+}
+
+() recv_external(slice in_msg) impure {
+  slice cs = get_data().begin_parse();
+  int stored_seqno = cs~load_uint(32);
+  cell dnst = cs~load_dict();
+  cs.end_parse();
+
+  var ds = in_msg;
+  var msg_seqno = ds~load_uint(32);
+  ds.end_parse();
+  throw_unless(33, msg_seqno == stored_seqno);
+  accept_message();
+  set_data(begin_cell().store_uint(stored_seqno + 1, 32).store_dict(dnst).end_cell());
+}
+
+
+;; Get methods
+
+int seqno() method_id {
+  return get_data().begin_parse().preload_uint(32);
+}
+
+(int, int, int, int) getinfo() method_id {
+  return (0, 0, 0, 0);
+}
