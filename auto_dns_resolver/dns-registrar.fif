@@ -1,0 +1,34 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+{ ."usage: " @' $0 type ." [<savefile>]" cr
+  ."Creates the message body to be sent from a validator controlling smart contract (wallet) to recover its share of unfrozen stakes and bonuses." cr
+  ."The result is saved into <savefile> (`dns-registrar-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to elections smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
+} : usage
+$# 1- -8 and ' usage if
+
+$1 parse-int =: dn_len    
+$2 =: dn    
+$3 parse-int =: c  
+$4 parse-int =: mn    
+$5 true parse-load-address =: bounce 2=: i    
+$6 true parse-load-address =: bounce 2=: ow    
+$7 (number) 1 <> { 0 } if dup 0<= abort"<elect-utime> must be a positive integer"
+constant et    
+$8 (number) 1 <> { 0 } if dup 0<= abort"<elect-utime> must be a positive integer"
+constant ct    
+def? $9 { @' $9 } { "dns-registrar-query.boc" } cond constant output_fname
+now constant query_id
+."query_id for dns-registrar message is set to " query_id . cr
+<b mn 32 i, i addr, ow addr, et 32 u, ct 32 u, b>
+<b 1 roll ref, b> 
+<s
+2
+dictnew
+16
+idict!
+drop
+<b x{726567} s, query_id 64 u, dn $, 1 roll ref,  b>
+cr ."Message body is " dup <s csr. cr
+
+2 boc+>B output_fname tuck B>file ."Saved to file " type cr
