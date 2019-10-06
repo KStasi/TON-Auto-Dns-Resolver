@@ -1,8 +1,0 @@
-# prerequirements
-npm install -g ton-dev-cli
-tondev setup
-tondev start
-
-# run
-tondev sol hello -js
-node index.js
