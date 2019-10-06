@@ -5,6 +5,7 @@
 (cell, int) prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
 (cell, (int)) ~prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
 (slice) get_last(slice s, int n) asm "SDCUTLAST";
+(int) get_trail0(slice s) asm "SDCNTTRAIL0";
 
 ;; load persistant data
 (int, cell) load_data() {
@@ -28,6 +29,14 @@
   send_raw_message(begin_cell().store_uint(0x18, 6).store_slice(addr).store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1).store_uint(ans_tag, 32).store_uint(query_id, 64).end_cell(), mode);
 }
 
+(int, int) get_dn_len(slice sdn) method_id {
+  int dn_len = sdn.slice_bits();
+  slice ls_ch = sdn.get_last(8);
+  int ils_ch = ls_ch~load_int(8);
+  ls_ch.end_parse();
+  return (dn_len, ils_ch);
+}
+
 () dnsregistrar(int dn_len, cell dn, cell dn_value) impure {
   (int stored_seqno, cell dnst) = load_data();
   
@@ -38,7 +47,6 @@
 
   ;; check if exist
   ;; check if valid
-
   dnst~prxdict_set(dn_len, dn.begin_parse(), dn_value.begin_parse());
   store_data(stored_seqno + 1, dnst);
 }
@@ -73,18 +81,16 @@
   }
   int query_id = in_msg~load_uint(64);
   if (op == 0x726567) {
+    in_msg~touch();
     cell dn = in_msg~load_ref();
     slice sdn = dn.begin_parse();
-    int dn_len = sdn.slice_bits();
-    slice ls_ch = sdn.get_last(8);
-    int ils_ch = ls_ch~load_int(8);
-    if (ils_ch != 0) {
+    (int dn_len, int bend) = get_dn_len(sdn);
+    if (bend != 0) {
       return ();
     }
     cell dns_value = in_msg~load_ref();
     return dnsregistrar(dn_len / 8, dn, dns_value);
-  }
-  
+  }  
   return ();
 }
 
