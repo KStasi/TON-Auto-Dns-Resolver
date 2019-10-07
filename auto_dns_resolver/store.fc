@@ -4,8 +4,12 @@
 (slice, slice, slice, int) prxdict_getq(cell dict, int key_len, slice index) asm(index dict key_len) "PFXDICTGETQ" "NULLSWAPIFNOT" "NULLSWAPIFNOT";
 (cell, int) prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
 (cell, (int)) ~prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
+(cell, ()) ~dict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "DICTSET";
+(slice, int) dict_get?(cell dict, int key_len, int index) asm(index dict key_len) "DICTGET" "NULLSWAPIFNOT";
+(slice, slice, int) dict_get_preve?(cell dict, int key_len, slice pivot) asm(pivot dict key_len -> 1 0 2) "DICTGETPREVEQ" "NULLSWAPIFNOT" "NULLSWAPIFNOT";
 (slice) get_last(slice s, int n) asm "SDCUTLAST";
 (int) get_trail0(slice s) asm "SDCNTTRAIL0";
+(builder) set_zeros(builder b, int n) asm "STZEROES";
 
 ;; load persistant data
 (int, cell) load_data() {
@@ -37,6 +41,73 @@
   return (dn_len, ils_ch);
 }
 
+(int, cell) dnsresolve(slice init_dn, int c) method_id(-7) {
+  (int stored_seqno, cell dnst) = load_data();
+
+  if (dnst.null?()) {
+    return (0, dnst);
+  }
+
+  ;; add final zeros
+  slice dn = begin_cell().store_slice(init_dn).set_zeros(8).end_cell().begin_parse();
+
+  int dn_len = dn.slice_bits();
+  (slice key, slice val, int f) = dict_get_preve?(dnst, dn_len, dn);
+
+  if (f) {
+      ;; substract hashmap
+      cell hshm = val~load_dict();
+      if (hshm.null?()) {
+        return (0, hshm);
+      }
+
+      ;; the whole domain found
+      int key_len = key.slice_bits();
+      if (key_len == dn_len) {
+        if (c == 0) {
+          return (dn_len, hshm);
+        }
+        cell dns_record = hshm.idict_get_ref(16, c);
+        return (dn_len, dns_record);
+      }
+
+      ;; try to find next dns resolver
+      cell nxt_rsl = hshm.idict_get_ref(16, -1);
+
+      if (nxt_rsl.null?()) {
+        ;; resolver not found
+        return (0, nxt_rsl);
+      }
+
+      ;; look for methods
+      slice rsl = nxt_rsl.begin_parse();
+      (int magic_number, slice identifier) = (rsl~load_int(32), rsl~load_bits(256));
+
+      ;; create msg
+      ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 10 010
+      ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
+      ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
+      ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
+      slice msg_body = begin_cell()
+        .store_slice(skip_bits(dn, key_len))
+        .store_int(c, 16)
+        .end_cell()
+        .begin_parse();
+      var msg = begin_cell()
+        .store_uint(0x88, 7)
+        .store_slice(identifier)
+        .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
+        .store_uint(magic_number, 32)
+        .store_slice(msg_body)
+        .end_cell();
+      send_raw_message(msg, 0);
+
+      ;; fix len
+      return (0, nxt_rsl);
+  }
+  return (0, new_dict());
+}
+
 () dnsregistrar(int dn_len, cell dn, cell dn_value) impure {
   (int stored_seqno, cell dnst) = load_data();
   
@@ -47,7 +118,7 @@
 
   ;; check if exist
   ;; check if valid
-  dnst~prxdict_set(dn_len, dn.begin_parse(), dn_value.begin_parse());
+  dnst~dict_set(dn_len, dn.begin_parse(), dn_value.begin_parse());
   store_data(stored_seqno + 1, dnst);
 }
 
@@ -114,6 +185,6 @@ int seqno() method_id {
   return get_data().begin_parse().preload_uint(32);
 }
 
-(int, int, int, int) getinfo() method_id {
-  return (0, 0, 0, 0);
+(int, cell) getinfo() method_id {
+  return load_data();
 }

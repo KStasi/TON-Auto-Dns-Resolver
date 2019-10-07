@@ -1,0 +1,27 @@
+#!/usr/bin/env fift -s
+
+"Asm.fif" include
+"dns-resolver.fif" include
+constant code
+
+<b 0 32 u,
+   dictnew dict,
+b> constant storage
+
+"TonUtil.fif" include
+
+{ ."usage: " @' $0 type ." <filename-base> <dest-addr> <seqno> <amount> [-B <body-boc>] [<savefile>]" cr
+  ."Creates a request to simple wallet created by new-wallet.fif, with private key loaded from file <filename-base>.pk "
+  ."and address from <filename-base>.addr, and saves it into <savefile>.boc ('wallet-query.boc' by default)" cr 1 halt
+} : usage
+$# 2- -2 and ' usage if
+
+$1 =: domain_name
+$2 parse-int =: category
+
+<b domain_name $, b> <s category -7 .s code storage .s runvm 
+
+constant updated_storage
+constant exit_code
+."Exit code " exit_code . cr
+."Updated storage: " cr updated_storage <s csr. cr
