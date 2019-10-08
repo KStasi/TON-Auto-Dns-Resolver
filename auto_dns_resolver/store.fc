@@ -22,6 +22,11 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
 ;; cell dict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "DICTSET";
 ;; (cell, ()) ~dict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "DICTSET";
 
+int lnow() method_id {
+  return 1570558743;
+}
+
+
 ;; load persistant data
 (int, cell) load_data() {
   slice cs = get_data().begin_parse();
@@ -52,21 +57,26 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
   return (dn_len, ils_ch);
 }
 
-(int, cell) dnsresolve(slice init_dn, int c) method_id(-7) {
+(int) calc_cost(int et, int ct, int cdn_bits, int cdn_refs) method_id {
+  ;; std_payment + payment_per_seconds + payment_per_bit + payment_per_ref
+  ;; caching time has no effect
+  return (12);
+  return (1500 + et - lnow() + cdn_bits + cdn_refs * 4);
+}
+
+(int, cell) dnsresolve(slice dn, int c) method_id(-7) {
   (int stored_seqno, cell dnst) = load_data();
 
   if (dnst.null?()) {
     return (0, dnst);
   }
 
-  ;; add final zeros
-  slice dn = begin_cell().store_slice(init_dn).set_zeros(8).end_cell().begin_parse();
-
   int dn_len = dn.slice_bits();
-  (slice key, slice val, int f) = dnst.dict_get_preve?(dn_len, dn);
-;;  if (f) {
-    ;; substract hashmap
-  ;;  cell hshm = val~load_dict();
+  var (prx, val, left, f) = dnst.prxdict_getq(dn_len, dn);
+  return (f, new_dict());
+  ;;if (f) {
+  ;;  ;; substract hashmap
+  ;;  cell hshm = val~load_ref();
   ;;  if (hshm.null?()) {
   ;;    return (0, hshm);
   ;;  }
@@ -77,10 +87,10 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
   ;;    if (c == 0) {
   ;;      return (dn_len, hshm);
   ;;    }
-  ;;    cell dns_record = hshm.idict_get_ref(16, c);
-  ;;    return (dn_len, dns_record);
+  ;;    (slice dns_record, f) = hshm.idict_get?(16, c);
+  ;;    return (dn_len, dns_record~load_ref());
   ;;  }
-;;  }
+  ;;}
 ;; 
   ;;     ;; try to find next dns resolver
   ;;     cell nxt_rsl = hshm.idict_get_ref(16, -1);
@@ -117,22 +127,51 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
   ;;     return (0, nxt_rsl);
   ;; }
 
-  cell hshm = val~load_ref();
-  var (hsm, f) = hshm.idict_get?(16, c);
-  return (f,  hshm); ;;begin_cell().store_slice(hsm).end_cell()); ;;val.idict_get_ref(16, c));
+  ;; var (hsm, f) = hshm.idict_get?(16, c);
+  return (0,  new_dict()); ;;begin_cell().store_slice(hsm).end_cell()); ;;val.idict_get_ref(16, c));
 }
 
-() dnsregistrar(int dn_len, slice dn, cell dn_value) impure {
+() dnsregistrar(int msg_value, slice in_msg) impure {
+  in_msg~touch();
+
+  ;; get domain name
+  cell cdn = in_msg~load_ref();
+  slice dn = cdn.begin_parse();
+  int dn_len = dn.slice_bits();
+
+  ;; extract data
   (int stored_seqno, cell dnst) = load_data();
-  
+    
   ;; if no table exist, create
   if (dnst.null?()) {
     dnst = new_dict();
   }
 
-  ;; check if exist
+  ;; check whether it is current contract responsibility
+  var (prx, val, left, f) = dnst.prxdict_getq(dn_len, dn);
+  if (f) {
+    return ();
+  }
+
   ;; check if valid
-  dnst~dict_set_ref(dn_len, dn, dn_value);
+  cell cdn_value = in_msg~load_dict();
+  slice dns_hshm = cdn_value.begin_parse();
+  (int cdn_bits, int cdn_refs) = dns_hshm.slice_bits_refs();
+  int et = in_msg~load_uint(32);
+  int ct = in_msg~load_uint(32);
+  
+  ;; check params
+  (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
+  if (price > msg_value) {
+    return();
+  }
+
+  if ((price > msg_value) | (ct < lnow()) | (et < lnow())) {
+    return();
+  }
+
+  slice dn_value = begin_cell().store_uint(et, 32).store_uint(ct, 32).store_dict(cdn_value).end_cell().begin_parse();
+  dnst~prxdict_set(dn_len, dn, dn_value);
   store_data(stored_seqno + 1, dnst);
 }
 
@@ -166,13 +205,7 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
   }
   int query_id = in_msg~load_uint(64);
   if (op == 0x726567) {
-    in_msg~touch();
-    cell dn = in_msg~load_ref();
-    slice sdn = dn.begin_parse();
-    sdn = begin_cell().store_slice(sdn).set_zeros(8).end_cell().begin_parse();
-    (int dn_len, int bend) = get_dn_len(sdn);
-    cell dns_value = in_msg~load_ref();
-    return dnsregistrar(dn_len, sdn, dns_value);
+    return dnsregistrar(msg_value, in_msg);
   }  
   return ();
 }
