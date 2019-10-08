@@ -1,196 +1,115 @@
 // automatically generated from `stdlib.fc` `store.fc` 
 PROGRAM{
-  DECLPROC find_subdomain
+  DECLPROC load_data
+  DECLPROC store_data
+  DECLPROC send_answer
+  114366 DECLMETHOD get_dn_len
+  -7 DECLMETHOD dnsresolve
   DECLPROC dnsregistrar
-  DECLPROC recv_internal
   DECLPROC recv_external
+  DECLPROC recv_internal
   85143 DECLMETHOD seqno
   79053 DECLMETHOD getinfo
-  find_subdomain PROC:<{
+  load_data PROC:<{
     c4 PUSH
     CTOS
     32 LDU
-    NIP
     LDDICT
     ENDS
+  }>
+  store_data PROC:<{
+    NEWC
+    s1 s2 XCHG
+    32 STU
+    STDICT
+    ENDC
+    c4 POP
+  }>
+  send_answer PROC:<{
+    0 PUSHINT
+    24 PUSHINT
+    NEWC
+    6 STU
+    s0 s5 XCHG2
+    STSLICER
+    s1 s4 XCHG
+    111 STU
+    32 STU
+    64 STU
+    ENDC
+    SWAP
+    SENDRAWMSG
+  }>
+  get_dn_len PROC:<{
+    DUP
+    SBITS
+    SWAP
+    8 PUSHINT
+    SDCUTLAST
+    8 LDI
+    ENDS
+  }>
+  dnsresolve PROC:<{
+    load_data CALLDICT
+    NIP
     DUP
     ISNULL
     IFJMP:<{
-      s0 s3 XCHG
-      3 BLKDROP
+      NIP
+      NIP
       0 PUSHINT
       SWAP
     }>
-    s2 s0 s3 XC2PU
-    PFXDICTGETQ
+    NEWC
+    s0 s3 XCHG2
+    STSLICER
+    8 PUSHINT
+    STZEROES
+    ENDC
+    CTOS
+    DUP
+    SBITS
+    s1 s3 s0 XCHG3
+    DICTGETPREVEQ
     NULLSWAPIFNOT
     NULLSWAPIFNOT
-    s3 POP
-    s0 s2 XCHG
-    IFJMP:<{
-      LDDICT
-      DROP
-      DUP
-      ISNULL
-      IFJMP:<{
-        s0 s3 XCHG
-        3 BLKDROP
-        0 PUSHINT
-        SWAP
-      }>
-      OVER
-      SEMPTY
-      IFJMP:<{
-        NIP
-        OVER
-        0 EQINT
-        IFJMP:<{
-          NIP
-        }>
-        16 PUSHINT
-        DICTIGETOPTREF
-      }>
-      s3 POP
-      -1 PUSHINT
-      s0 s3 XCHG2
-      16 PUSHINT
-      DICTIGETOPTREF
-      DUP
-      ISNULL
-      IFJMP:<{
-        NIP
-        NIP
-        0 PUSHINT
-        SWAP
-      }>
-      DUP
-      CTOS
-      32 LDI
-      256 LDSLICE
-      DROP
-      NEWC
-      s0 s5 XCHG2
-      STSLICER
-      s1 s3 XCHG
-      16 STI
-      ENDC
-      CTOS
-      0 PUSHINT
-      136 PUSHINT
-      NEWC
-      7 STU
-      s0 s5 XCHG2
-      STSLICER
-      s1 s4 XCHG
-      111 STU
-      s1 s2 XCHG
-      32 STU
-      ROT
-      STSLICER
-      ENDC
-      0 PUSHINT
-      SENDRAWMSG
-      0 PUSHINT
-      SWAP
-    }>
-    4 BLKDROP
-    0 PUSHINT
-    NEWDICT
+    2DROP
+    LDREF
+    DROP
+    TUCK
+    16 PUSHINT
+    DICTIGET
+    NULLSWAPIFNOT
+    NIP
+    SWAP
   }>
   dnsregistrar PROC:<{
-    c4 PUSH
-    CTOS
-    32 LDU
-    LDDICT
-    ENDS
+    load_data CALLDICT
     DUP
     ISNULL
     IF:<{
       DROP
       NEWDICT
     }>
-    s9 s8 PUSH2
-    0 PUSHINT
-    find_subdomain CALLDICT
-    NEWDICT
-    s0 s2 XCHG
-    IFJMP:<{
-      s0 s3 XCHG
-      3 BLKDROP
-      s6 s0 PUSH2
-      16 PUSHINT
-      DICTIGETOPTREF
-      ISNULL
-      IFJMP:<{
-        9 BLKDROP
-      }>
-      -1 PUSHINT
-      SWAP
-      16 PUSHINT
-      DICTIGETOPTREF
-      CTOS
-      32 LDI
-      256 LDSLICE
-      DROP
-      NEWC
-      s1 s10 XCHG
-      32 STI
-      s0 s8 XCHG2
-      STSLICER
-      s1 s6 XCHG
-      16 STI
-      s1 s4 XCHG
-      32 STI
-      ROT
-      STSLICER
-      SWAP
-      STSLICER
-      32 STU
-      32 STU
-      ENDC
-      CTOS
-      0 PUSHINT
-      8 PUSHINT
-      NEWC
-      6 STU
-      s0 s4 XCHG2
-      STSLICER
-      s1 s3 XCHG
-      111 STU
-      32 STU
-      SWAP
-      STSLICER
-      ENDC
-      0 PUSHINT
-      SENDRAWMSG
-    }>
-    DROP
-    NEWC
-    s1 s8 XCHG
-    32 STI
-    s0 s6 XCHG2
-    STSLICER
-    s0 s4 XCHG2
-    STSLICER
-    s1 s2 XCHG
-    32 STU
-    32 STU
-    ENDC
-    s0 s4 s3 XCHG3
-    16 PUSHINT
-    DICTISETREF
-    CTOS
-    s3 s1 s3 XCHG3
-    s0 s4 XCHG
-    PFXDICTSET
-    DROP
+    s3 s0 s4 XCHG3
+    DICTSETREF
     SWAP
     INC
-    NEWC
-    32 STU
-    STDICT
-    ENDC
-    c4 POP
+    SWAP
+    store_data CALLDICT
+  }>
+  recv_external PROC:<{
+    load_data CALLDICT
+    s0 s2 XCHG
+    32 LDU
+    DROP
+    OVER
+    EQUAL
+    33 THROWIFNOT
+    ACCEPT
+    INC
+    SWAP
+    store_data CALLDICT
   }>
   recv_internal PROC:<{
     s2 POP
@@ -215,36 +134,28 @@ PROGRAM{
     }>
     64 LDU
     NIP
-    16 LDU
-    OVER
-    LDSLICEX
-    16 LDU
-    s4 PUSH
-    1919251308 PUSHINT
-    EQUAL
-    IFJMP:<{
-      5 BLKDROP
-    }>
-    32 LDU
-    256 LDSLICE
-    256 LDSLICE
-    64 LDU
-    64 LDU
-    DROP
-    s8 PUSH
+    SWAP
     7497063 PUSHINT
     EQUAL
     IFJMP:<{
-      s8 POP
-      7 ROLL
+      LDREF
+      SWAP
+      CTOS
+      NEWC
+      SWAP
+      STSLICER
+      8 PUSHINT
+      STZEROES
+      ENDC
+      CTOS
+      DUP
+      get_dn_len CALLDICT
+      DROP
+      s0 s2 XCHG
+      LDREF
+      DROP
       dnsregistrar CALLDICT
     }>
-    8 BLKDROP
-    1919251308 PUSHINT
-    EQUAL
-    DROP
-  }>
-  recv_external PROC:<{
     DROP
   }>
   seqno PROC:<{
@@ -253,7 +164,6 @@ PROGRAM{
     32 PLDU
   }>
   getinfo PROC:<{
-    0 PUSHINT
-    s0 s0 s0 PUSH3
+    load_data CALLDICT
   }>
-}END>c
+}END>s

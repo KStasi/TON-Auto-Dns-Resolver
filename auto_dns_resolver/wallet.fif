@@ -1,22 +1,13 @@
 #!/usr/bin/env fift -s
-
-"Asm.fif" include
-"dns-resolver.fif" include
-constant code
-
-<b 0 32 u,
-   dictnew dict,
-b> constant storage
-
 "TonUtil.fif" include
 
 { ."usage: " @' $0 type ." <filename-base> <dest-addr> <seqno> <amount> [-B <body-boc>] [<savefile>]" cr
   ."Creates a request to simple wallet created by new-wallet.fif, with private key loaded from file <filename-base>.pk "
   ."and address from <filename-base>.addr, and saves it into <savefile>.boc ('wallet-query.boc' by default)" cr 1 halt
 } : usage
-def? $8 { @' $7 "-B" $= { @' $8 =: body-boc-file [forget] $8 def? $9 { @' $9 =: $7 [forget] $9 } { [forget] $7 } cond
+def? $6 { @' $5 "-B" $= { @' $6 =: body-boc-file [forget] $6 def? $7 { @' $7 =: $5 [forget] $7 } { [forget] $5 } cond
   @' $# 2- =: $# } if } if
-$# dup 6 < swap 7 > or ' usage if
+$# dup 4 < swap 5 > or ' usage if
 
 true constant bounce
 
@@ -24,9 +15,7 @@ $1 =: file-base
 $2 bounce parse-load-address =: bounce 2=: dest_addr
 $3 parse-int =: seqno
 $4 $>GR =: amount
-$5 =: domain_name
-$6 parse-int =: category
-def? $7 { @' $7 } { "wallet-query" } cond constant savefile
+def? $5 { @' $5 } { "wallet-query" } cond constant savefile
 3 constant send-mode  // mode for SENDRAWMSG: +1 - sender pays fees, +2 - ignore errors
 
 file-base +".addr" load-address
@@ -41,24 +30,17 @@ constant body-cell
 dest_addr 2dup bounce 7 + .Addr ." = " .addr 
 ."seqno=0x" seqno x. ."bounce=" bounce . cr
 ."Body of transfer message is " body-cell <s csr. cr
-
+  
 // create a message
-<b b{0100} s, bounce 1 i, b{000100} s, dest_addr addr, amount Gram, 0 9 64 32 + + 1+ u, 
+<b b{01} s, bounce 1 i, b{000100} s, dest_addr addr, amount Gram, 0 9 64 32 + + 1+ u, 
   body-cell <s 2dup s-fits? not rot over 1 i, -rot { drop body-cell ref, } { s, } cond
-b>  constant arg1 
-
-10 arg1 body-cell <s  0 code storage  runvm 
-
-constant updated_storage
-constant exit_code
-."Exit code " exit_code . cr
-."Updated storage: " cr updated_storage <s csr. cr
-
-
-<b domain_name $, b> <s category -7 .s code updated_storage .s runvm 
-
-constant updated_storage
-constant exit_code
-."Exit code " exit_code . cr
-."Updated storage: " cr updated_storage <s csr. cr
-.s
+b> .s
+<b seqno 32 u, send-mode 8 u, swap ref, b>
+dup ."signing message: " <s csr. cr
+dup hashu wallet_pk ed25519_sign_uint
+<b b{1000100} s, wallet_addr addr, 0 Gram, b{00} s,
+   swap B, swap <s s, b>
+dup ."resulting external message: " <s csr. cr
+2 boc+>B dup Bx. cr
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr

@@ -22,8 +22,8 @@ now constant query_id
 ."query_id for dns-registrar message is set to " query_id . cr
 <b mn 32 i, i addr, ow addr, et 32 u, ct 32 u, b>
 <b 1 roll ref, b> 
-<s 2 dictnew 16 idict! drop
-<b dn $, x{00} s, b>
+<s c dictnew .s 16 idict! drop
+<b dn $, b>
 <b 7497063 32 u, query_id 64 u, 1 roll ref, 1 roll ref,  b>
 cr ."Message body is " dup <s csr. cr
 
