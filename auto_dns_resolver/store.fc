@@ -102,7 +102,7 @@ int lnow() method_id {
     (int magic_number, slice identifier) = (rsl~load_int(32), rsl~load_bits(256));
   
     ;; create msg
-    ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 10 010
+    ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 110
     ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
     ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
     ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
@@ -125,7 +125,7 @@ int lnow() method_id {
   return (0,  new_dict()); 
 }
 
-() dnsregistrar(int msg_value, slice in_msg) impure {
+() dnsregistrar(int query_id, int msg_value, slice in_msg) impure {
   ;; extract data
   (int stored_seqno, cell dnst) = load_data();
     
@@ -157,8 +157,8 @@ int lnow() method_id {
   var (prx, val, left, f) = dnst.prxdict_getq(1023, dn);
   if (f) {
     ;; substract hashmap
-    var (et, ct, hshm) = (val~load_uint(32), val~load_uint(32), val~load_dict());
-    if (hshm.null?() | (et < lnow())) {
+    var (etv, ctv, hshm) = (val~load_uint(32), val~load_uint(32), val~load_dict());
+    if (hshm.null?() | (etv < lnow())) {
       return ();
     }
 
@@ -178,14 +178,16 @@ int lnow() method_id {
       .store_ref(begin_cell().store_slice(left).end_cell())
       .store_uint(et, 32)
       .store_uint(ct, 32)
+      .store_dict(cdn_value)
       .end_cell()
       .begin_parse();
     var msg = begin_cell()
-      .store_uint(0x18, 6)
+      .store_uint(0x18, 6) ;; 0xc4ff, 17
       .store_slice(i)
-      .store_grams(msg_value - 100)
+      .store_grams(msg_value - 1)
       .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
       .store_uint(7497063, 32)
+      .store_uint(query_id, 64)
       .store_slice(msg_body)
       .end_cell();
     send_raw_message(msg, 64);
@@ -227,7 +229,7 @@ int lnow() method_id {
   }
   int query_id = in_msg~load_uint(64);
   if (op == 0x726567) {
-    return dnsregistrar(msg_value, in_msg);
+    return dnsregistrar(query_id, msg_value, in_msg);
   }
   if (op == 0x3440B9) {
     var (dn, c) = in_msg.load_int(16);

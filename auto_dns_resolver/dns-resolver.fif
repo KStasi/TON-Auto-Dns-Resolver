@@ -205,7 +205,7 @@ PROGRAM{
     LESS
     OR
     IFJMP:<{
-      7 BLKDROP
+      8 BLKDROP
     }>
     s3 s5 PUSH2
     10 PUSHPOW2DEC
@@ -215,24 +215,24 @@ PROGRAM{
     s3 POP
     s0 s2 XCHG
     IFJMP:<{
-      s2 POP
-      s2 POP
-      s2 POP
-      s2 POP
-      s2 POP
-      s2 POP
+      s5 POP
+      s5 POP
+      s5 POP
+      s0 s2 XCHG
       32 LDU
       32 LDU
+      NIP
       LDDICT
       DROP
       DUP
       ISNULL
-      s3 PUSH
       lnow CALLDICT
+      s1 s3 XCHG
       LESS
+      s1 s2 XCHG
       OR
       IFJMP:<{
-        5 BLKDROP
+        7 BLKDROP
       }>
       -1 PUSHINT
       SWAP
@@ -241,7 +241,7 @@ PROGRAM{
       DUP
       ISNULL
       IFJMP:<{
-        5 BLKDROP
+        7 BLKDROP
       }>
       CTOS
       32 LDI
@@ -254,9 +254,11 @@ PROGRAM{
       ENDC
       NEWC
       STREF
+      s1 s4 XCHG
+      32 STU
+      32 STU
       s1 s2 XCHG
-      32 STU
-      32 STU
+      STDICT
       ENDC
       CTOS
       7497063 PUSHINT
@@ -267,13 +269,15 @@ PROGRAM{
       s0 s4 XCHG2
       STSLICER
       s0 s4 XCHG
-      -100 ADDCONST
+      DEC
       s1 s4 XCHG
       STGRAMS
       s1 s2 XCHG
       107 STU
       s1 s2 XCHG
       32 STU
+      s1 s2 XCHG
+      64 STU
       SWAP
       STSLICER
       ENDC
@@ -282,16 +286,17 @@ PROGRAM{
     }>
     2DROP
     s6 POP
+    s6 POP
     NEWC
-    s1 s6 XCHG
+    s1 s5 XCHG
     32 STU
     s1 s5 XCHG
     32 STU
-    s1 s4 XCHG
+    s1 s3 XCHG
     STDICT
     ENDC
     CTOS
-    2SWAP
+    s0 s3 s3 XCHG3
     10 PUSHPOW2DEC
     PFXDICTSET
     DROP
@@ -335,16 +340,16 @@ PROGRAM{
       3 BLKDROP
     }>
     64 LDU
-    NIP
-    OVER
+    s2 PUSH
     7497063 PUSHINT
     EQUAL
     IFJMP:<{
-      NIP
+      s2 POP
+      -ROT
       dnsregistrar CALLDICT
     }>
-    DROP
-    NIP
+    s2 s3 XCHG
+    3 BLKDROP
     3424441 PUSHINT
     EQUAL
     IFJMP:<{
