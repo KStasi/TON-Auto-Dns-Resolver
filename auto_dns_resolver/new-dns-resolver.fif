@@ -27,7 +27,7 @@ dup hashu wc swap 2dup 2constant wallet_addr
 ."Non-bounceable address (for init): " 2dup 7 .Addr cr
 ."Bounceable address (for later access): " 6 .Addr cr
 // ext_in_msg_info$10 src:MsgAddressExt -> 00 dest:MsgAddressInt -> wallet_addr import_fee:Grams = CommonMsgInfo;
-<b b{1000100} s, wallet_addr addr, b{000010} s, swap  <s s, b{0} s, 0 32 u, b>
+<b b{1000100} s, wallet_addr addr, b{000010} s, swap  <s s, b{0} s, 0 32 u, dictnew dict, b>
 dup ."External message for initialization is " <s csr. cr
 2 boc+>B dup Bx. cr
 file-base +"-query.boc" tuck B>file

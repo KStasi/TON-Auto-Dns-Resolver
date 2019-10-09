@@ -27,6 +27,7 @@ time.sleep(1)
 os.system(screen_cmd + get_seqno_cmd)
 time.sleep(1)   
 os.system(make_hardcopy)
+time.sleep(1)   
 with open('../smart_contracts_test/hardscreen') as c:
     content = c.read()
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]

@@ -27,15 +27,19 @@ $4 $>GR =: amount
 $5 =: domain_name
 $6 parse-int =: category
 def? $7 { @' $7 } { "wallet-query" } cond constant savefile
-3 constant send-mode  // mode for SENDRAWMSG: +1 - sender pays fees, +2 - ignore errors
+3 constant send-mode  
+"dns-registrar2-query.boc" constant body-boc-file2
 
 file-base +".addr" load-address
 2dup 2constant wallet_addr
 ."Source wallet address = " 2dup .addr cr 6 .Addr cr
 file-base +".pk" load-keypair nip constant wallet_pk
 
-def? body-boc-file { @' body-boc-file file>B B>boc } { <b 0 32 u, "TEST" $, b> } cond
+def? body-boc-file { @' body-boc-file file>B B>boc } { <b b> } cond
 constant body-cell
+
+def? body-boc-file2 { @' body-boc-file2 file>B B>boc } { <b b> } cond
+constant body-cell2
 
 ."Transferring " amount .GR ."to account "
 dest_addr 2dup bounce 7 + .Addr ." = " .addr 
@@ -47,8 +51,18 @@ dest_addr 2dup bounce 7 + .Addr ." = " .addr
   body-cell <s 2dup s-fits? not rot over 1 i, -rot { drop body-cell ref, } { s, } cond
 b>  constant arg1 
 
-10 arg1 body-cell <s  0 code storage  runvm 
+<b b{0100} s, bounce 1 i, b{000100} s, dest_addr addr, amount Gram, 0 9 64 32 + + 1+ u, 
+  body-cell2 <s 2dup s-fits? not rot over 1 i, -rot { drop body-cell2 ref, } { s, } cond
+b>  constant arg2 
 
+amount arg2 body-cell2 <s  0 code storage  runvm 
+
+constant updated_storage
+constant exit_code
+."Exit code " exit_code . cr
+."Updated storage: " cr updated_storage <s csr. cr
+
+amount arg1 body-cell <s  0 code updated_storage  runvm 
 constant updated_storage
 constant exit_code
 ."Exit code " exit_code . cr

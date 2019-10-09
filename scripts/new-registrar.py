@@ -12,7 +12,7 @@ send_dns_query = '"sendfile ../auto_dns_resolver/new-dns-query.boc\n"'
 make_hardcopy = 'screen -S iced -p 0 -X hardcopy "hardscreen"\n'
 
 last = '"last\n"'
-prepare_registrar_end = ' 0.1'
+prepare_registrar_end = ' 1'
 code =  ' -B dns-registrar-query.boc'
 
 os.system(compile_cmd)
@@ -25,10 +25,11 @@ with open('new_dnsresolver_out') as f:
 os.system(screen_cmd + last)
 time.sleep(1)   
 os.system(screen_cmd + get_seqno_cmd)
-time.sleep(3)   
+time.sleep(1)   
 os.system(screen_cmd + get_seqno_cmd)
 time.sleep(1)   
 os.system(make_hardcopy)
+time.sleep(1)   
 with open('../smart_contracts_test/hardscreen') as c:
     content = c.read()
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
