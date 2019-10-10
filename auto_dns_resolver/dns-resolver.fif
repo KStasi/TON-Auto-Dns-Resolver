@@ -136,7 +136,7 @@ PROGRAM{
       DUP
       CTOS
       32 LDI
-      256 LDSLICE
+      LDMSGADDR
       DROP
       NEWC
       s0 s6 XCHG2
@@ -145,22 +145,24 @@ PROGRAM{
       16 STI
       ENDC
       CTOS
+      lnow CALLDICT
       0 PUSHINT
       24 PUSHINT
       NEWC
       6 STU
-      s0 s6 XCHG2
+      s0 s7 XCHG2
       STSLICER
-      s1 s5 XCHG
+      s1 s6 XCHG
       111 STU
-      s1 s3 XCHG
+      s1 s4 XCHG
       32 STU
-      s0 s3 XCHG2
+      s1 s4 XCHG
+      64 STU
+      ROT
       STSLICER
       ENDC
       64 PUSHINT
       SENDRAWMSG
-      SWAP
       SBITS
       3 RSHIFT#
       INC
@@ -171,6 +173,7 @@ PROGRAM{
     NEWDICT
   }>
   dnsregistrar PROC:<{
+    s3 POP
     load_data CALLDICT
     DUP
     ISNULL
@@ -178,7 +181,7 @@ PROGRAM{
       DROP
       NEWDICT
     }>
-    s0 s2 XCHG
+    s0 s4 XCHG
     LDREF
     SWAP
     CTOS
@@ -194,20 +197,20 @@ PROGRAM{
     2DUP
     s4 s5 XCHG2
     calc_cost CALLDICT
-    s7 PUSH
+    s0 s6 XCHG2
     GREATER
-    s2 PUSH
-    lnow CALLDICT
-    LESS
-    OR
     OVER
     lnow CALLDICT
     LESS
     OR
+    s5 PUSH
+    lnow CALLDICT
+    LESS
+    OR
     IFJMP:<{
-      8 BLKDROP
+      7 BLKDROP
     }>
-    s3 s5 PUSH2
+    s2 s6 PUSH2
     10 PUSHPOW2DEC
     PFXDICTGETQ
     NULLSWAPIFNOT
@@ -215,10 +218,10 @@ PROGRAM{
     s3 POP
     s0 s2 XCHG
     IFJMP:<{
-      s5 POP
-      s5 POP
-      s5 POP
-      s0 s2 XCHG
+      s4 POP
+      s4 POP
+      s6 POP
+      SWAP
       32 LDU
       32 LDU
       NIP
@@ -232,7 +235,7 @@ PROGRAM{
       s1 s2 XCHG
       OR
       IFJMP:<{
-        7 BLKDROP
+        6 BLKDROP
       }>
       -1 PUSHINT
       SWAP
@@ -241,42 +244,39 @@ PROGRAM{
       DUP
       ISNULL
       IFJMP:<{
-        7 BLKDROP
+        6 BLKDROP
       }>
       CTOS
       32 LDI
       NIP
-      256 LDSLICE
+      8 LDI
+      NIP
+      256 LDU
       DROP
       NEWC
-      s0 s4 XCHG2
+      s0 s3 XCHG2
       STSLICER
       ENDC
       NEWC
       STREF
+      s1 s3 XCHG
+      32 STU
       s1 s4 XCHG
       32 STU
-      32 STU
-      s1 s2 XCHG
       STDICT
       ENDC
       CTOS
       7497063 PUSHINT
       0 PUSHINT
-      24 PUSHINT
+      50431 PUSHINT
       NEWC
-      6 STU
-      s0 s4 XCHG2
-      STSLICER
-      s0 s4 XCHG
-      DEC
+      17 STU
+      s1 s5 XCHG
+      256 STU
       s1 s4 XCHG
-      STGRAMS
-      s1 s2 XCHG
-      107 STU
-      s1 s2 XCHG
+      111 STU
+      s1 s3 XCHG
       32 STU
-      s1 s2 XCHG
       64 STU
       SWAP
       STSLICER
@@ -285,18 +285,17 @@ PROGRAM{
       SENDRAWMSG
     }>
     2DROP
-    s6 POP
-    s6 POP
+    s5 POP
     NEWC
-    s1 s5 XCHG
+    s1 s4 XCHG
     32 STU
-    s1 s5 XCHG
+    s1 s4 XCHG
     32 STU
-    s1 s3 XCHG
+    s1 s2 XCHG
     STDICT
     ENDC
     CTOS
-    s0 s3 s3 XCHG3
+    s0 s0 s3 XCHG3
     10 PUSHPOW2DEC
     PFXDICTSET
     DROP
@@ -322,22 +321,25 @@ PROGRAM{
     SWAP
     CTOS
     4 LDU
-    DROP
+    SWAP
     1 PUSHINT
     AND
     IFJMP:<{
-      2DROP
+      3 BLKDROP
     }>
-    DUP
+    LDMSGADDR
+    DROP
+    OVER
     SEMPTY
     IFJMP:<{
-      2DROP
+      3 BLKDROP
     }>
+    SWAP
     32 LDU
     OVER
     0 EQINT
     IFJMP:<{
-      3 BLKDROP
+      4 BLKDROP
     }>
     64 LDU
     s2 PUSH
@@ -345,11 +347,11 @@ PROGRAM{
     EQUAL
     IFJMP:<{
       s2 POP
-      -ROT
+      s0 s3 s3 XCHG3
       dnsregistrar CALLDICT
     }>
-    s2 s3 XCHG
-    3 BLKDROP
+    s2 s4 XCHG
+    4 BLKDROP
     3424441 PUSHINT
     EQUAL
     IFJMP:<{

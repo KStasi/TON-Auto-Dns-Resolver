@@ -185,12 +185,11 @@ int lnow() method_id {
     var msg = begin_cell()
       .store_uint(0xc4ff, 17)
       .store_uint(rsl_addr, 256)
-      .store_grams(msg_value)
-      .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+      .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
       .store_uint(7497063, 32)
       .store_uint(query_id, 64)
       .store_slice(msg_body);
-    send_raw_message(msg.end_cell(), 3);
+    send_raw_message(msg.end_cell(), 64);
     return ();
   }
 

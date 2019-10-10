@@ -6,13 +6,14 @@
   ."The result is saved into <savefile> (`dns-registrar-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to elections smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
 } : usage
 $# 1- -8 and ' usage if
+true constant bounce
 
 $1 parse-int =: dn_len    
 $2 =: dn    
 $3 parse-int =: c  
 $4 parse-int =: mn    
-$5 true parse-load-address =: bounce 2=: i    
-$6 true parse-load-address =: bounce 2=: ow    
+$5 bounce parse-load-address =: bounce 2=: i    
+$6 bounce parse-load-address =: bounce 2=: ow    
 $7 (number) 1 <> { 0 } if dup 0<= abort"<expirational-utime> must be a positive integer"
 constant et    
 $8 (number) 1 <> { 0 } if dup 0<= abort"<caching-utime> must be a positive integer"
@@ -20,9 +21,9 @@ constant ct
 def? $9 { @' $9 } { "dns-registrar-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-registrar message is set to " query_id . cr
-<b mn 32 i, i addr, ow addr, b>
-<b 1 roll ref, b> 
-<s c dictnew .s 16 idict! drop
+<b mn 32 i, i .s addr, ow addr, b> 
+<b swap ref, b>
+<s c dictnew 16 idict! drop
 <b dn $, b>
 <b 7497063 32 u, query_id 64 u, 1 roll ref, 1 roll dict, et 32 u, ct 32 u, b>
 cr ."Message body is " dup <s csr. cr
