@@ -3,10 +3,10 @@ import re
 import time
 
 compile_cmd = 'func -P -o dns-resolver.fif stdlib.fc store.fc\n'
-new_dns_cmd = "fift -s new-dns-resolver.fif  0 > new_dnsresolver_out\n"
+new_dns_cmd = "fift -s new-dns-resolver.fif -1 > new_dnsresolver_out\n"
 screen_cmd = 'screen -S iced -p 0 -X stuff '
-get_seqno_cmd = '"runmethod kQDcBokBQyDW0yhsKn4agtPGgT1XBGEWXrD1O_Ic_nbYdvAU seqno \n"'
-prepare_registrar_cmd = 'fift -s wallet.fif  mai-wal '
+get_seqno_cmd = '"runmethod kf8H4FjPvnlDT7y7p0dKpU6VkDgtXhh36vLis_Qw2LwNRoSo seqno \n"'
+prepare_registrar_cmd = 'fift -s wallet.fif main-wallet '
 send_wallet_query = '"sendfile ../auto_dns_resolver/wallet-query.boc\n"'
 send_dns_query = '"sendfile ../auto_dns_resolver/new-dns-query.boc\n"'
 make_hardcopy = 'screen -S iced -p 0 -X hardcopy "hardscreen"\n'
