@@ -16,20 +16,34 @@ def? $2 { @' $2 } { "new-dns" } cond constant file-base
 "Asm.fif" include
 "dns-resolver.fif" include
 <b 0 32 u,
-   dictnew dict,
+   dictnew dict, 
+   file-base +".pk" load-generate-keypair
+   constant wallet_pk 
+   B, 
+   4 6 u,
+   31556952 32 u,
+   1 6 u,
+   1 6 u,
+   1 6 u,
 b>
-null // no libraries
-<b b{0011} s, 3 roll ref, rot ref, swap dict, b>  // create StateInit
+null
+<b b{0011} s, 3  roll ref, rot ref, swap dict, b>  // create StateInit
 dup ."StateInit: " <s csr. cr
 dup hashu wc swap 2dup 2constant wallet_addr
 ."new pinger address = " 2dup .addr cr
 2dup file-base +".addr" save-address-verbose
 ."Non-bounceable address (for init): " 2dup 7 .Addr cr
 ."Bounceable address (for later access): " 6 .Addr cr
-// ext_in_msg_info$10 src:MsgAddressExt -> 00 dest:MsgAddressInt -> wallet_addr import_fee:Grams = CommonMsgInfo;
-<b b{1000100} s, wallet_addr addr, b{000010} s, swap  <s s, b{0} s, 0 32 u, dictnew dict, b>
+<b 0 32 u, b>
+dup ."signing message: " <s csr. cr
+dup hashu wallet_pk ed25519_sign_uint rot
+<b b{1000100} s, wallet_addr addr, b{000010} s, swap <s s, b{0} s, swap B, swap <s s, b>
 dup ."External message for initialization is " <s csr. cr
 2 boc+>B dup Bx. cr
 file-base +"-query.boc" tuck B>file
-."(Saved pinger creating query to file " type .")" cr
+."(Saved wallet creating query to file " type .")" cr
+
+// ext_in_msg_info$10 src:MsgAddressExt -> 00 dest:MsgAddressInt -> wallet_addr import_fee:Grams = CommonMsgInfo;
+// <b b{1000100} s, wallet_addr addr, b{000010} s, swap  <s s, b{0} s, 0 32 u, dictnew dict, b>
+
 

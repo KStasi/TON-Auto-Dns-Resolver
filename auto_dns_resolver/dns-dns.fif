@@ -54,10 +54,10 @@ PROGRAM{
     c4 POP
   }>
   store_short_data PROC:<{
+    NIP
     NEWC
-    s1 s3 XCHG
+    s1 s2 XCHG
     32 STU
-    STDICT
     SWAP
     STSLICER
     ENDC
@@ -419,4 +419,4 @@ PROGRAM{
   getinfo PROC:<{
     load_data CALLDICT
   }>
-}END>s
+}END>c

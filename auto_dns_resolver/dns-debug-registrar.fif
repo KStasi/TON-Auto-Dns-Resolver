@@ -5,7 +5,15 @@
 constant code
 
 <b 0 32 u,
-   dictnew dict,
+   dictnew dict, .s
+   "new-dns.pk" load-generate-keypair
+   constant wallet_pk .s
+   B, 
+   4 6 u,
+   31556952 32 u,
+   1 6 u,
+   1 6 u,
+   1 6 u,
 b> constant storage
 
 "TonUtil.fif" include

@@ -2,7 +2,7 @@ import os
 import re
 import time
 
-compile_cmd = 'func -P -o dns-resolver.fif stdlib.fc store.fc\n'
+compile_cmd = 'func -P -o dns-resolver.fif stdlib.fc dns-code.fc\n'
 new_dns_cmd = "fift -s new-dns-resolver.fif  -1 > new_dnsresolver_out\n"
 screen_cmd = 'screen -S iced -p 0 -X stuff '
 get_seqno_cmd = '"runmethod kf8H4FjPvnlDT7y7p0dKpU6VkDgtXhh36vLis_Qw2LwNRoSo seqno \n"'

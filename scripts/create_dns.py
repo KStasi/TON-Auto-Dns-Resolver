@@ -2,7 +2,7 @@ import os
 import re
 import time
 
-compile_cmd = 'func -P -o dns-resolver.fif stdlib.fc store.fc\n'
+compile_cmd = 'func -P -o dns-resolver.fif stdlib.fc dns-code.fc\n'
 new_dns_cmd = "fift -s new-dns-resolver.fif -1 > new_dnsresolver_out\n"
 screen_cmd = 'screen -S iced -p 0 -X stuff '
 get_seqno_cmd = '"runmethod kf8H4FjPvnlDT7y7p0dKpU6VkDgtXhh36vLis_Qw2LwNRoSo seqno \n"'
@@ -12,7 +12,7 @@ send_dns_query = '"sendfile ../auto_dns_resolver/new-dns-query.boc\n"'
 make_hardcopy = 'screen -S iced -p 0 -X hardcopy "hardscreen"\n'
 
 last = '"last\n"'
-prepare_registrar_end = ' 0.1'
+prepare_registrar_end = ' 0.5'
 code =  ' -B dns-registrar-query.boc'
 
 os.system(compile_cmd)
