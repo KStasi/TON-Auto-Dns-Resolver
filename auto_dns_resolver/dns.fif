@@ -9,6 +9,7 @@ PROGRAM{
   110403 DECLMETHOD get_payment_info
   67845 DECLMETHOD calc_cost
   -7 DECLMETHOD dnsresolve
+  DECLPROC changerecord
   DECLPROC dnsregistrar
   DECLPROC recv_external
   DECLPROC recv_internal
@@ -228,6 +229,145 @@ PROGRAM{
     0 PUSHINT
     NEWDICT
   }>
+  changerecord PROC:<{
+    load_short_data CALLDICT
+    OVER
+    ISNULL
+    IFJMP:<{
+      6 BLKDROP
+    }>
+    s0 s3 XCHG
+    LDREF
+    SWAP
+    CTOS
+    SWAP
+    LDDICT
+    DROP
+    s1 s2 PUSH2
+    10 PUSHPOW2DEC
+    PFXDICTGETQ
+    NULLSWAPIFNOT
+    NULLSWAPIFNOT
+    s3 POP
+    DUP
+    SEMPTY
+    0 EQINT
+    s1 s3 XCHG
+    AND
+    IFJMP:<{
+      s3 POP
+      s3 POP
+      s3 POP
+      s3 POP
+      s3 POP
+      SWAP
+      32 LDU
+      32 LDU
+      NIP
+      LDDICT
+      DROP
+      DUP
+      ISNULL
+      lnow CALLDICT
+      s1 s3 XCHG
+      LESS
+      s1 s2 XCHG
+      OR
+      IFJMP:<{
+        4 BLKDROP
+      }>
+      -1 PUSHINT
+      SWAP
+      16 PUSHINT
+      DICTIGETOPTREF
+      DUP
+      ISNULL
+      IFJMP:<{
+        4 BLKDROP
+      }>
+      CTOS
+      32 LDI
+      NIP
+      8 LDI
+      NIP
+      256 LDSLICE
+      DROP
+      NEWC
+      s0 s3 XCHG2
+      STSLICER
+      ENDC
+      NEWC
+      STREF
+      STDICT
+      ENDC
+      50431 PUSHINT
+      17 PUSHINT
+      7497072 PUSHINT
+      s0 s3 XCHG
+      CTOS
+      0 PUSHINT
+      s3 s6 XCHG
+      s2 s5 XCHG
+      s2 s4 XCHG
+      s2 s3 XCHG
+      64 PUSHINT
+      send_message CALLDICT
+    }>
+    NIP
+    s7 POP
+    s0 s6 XCHG
+    32 LDU
+    32 LDU
+    LDDICT
+    DROP
+    DUP
+    ISNULL
+    s3 PUSH
+    lnow CALLDICT
+    LESS
+    OR
+    IFJMP:<{
+      9 BLKDROP
+    }>
+    -2 PUSHINT
+    SWAP
+    16 PUSHINT
+    DICTIGETOPTREF
+    DUP
+    ISNULL
+    IFJMP:<{
+      9 BLKDROP
+    }>
+    CTOS
+    8 LDI
+    NIP
+    256 LDSLICE
+    DROP
+    s0 s7 XCHG
+    8 PUSHINT
+    SDSKIPFIRST
+    s0 s7 XCHG2
+    SDLEXCMP
+    IFJMP:<{
+      7 BLKDROP
+    }>
+    NEWC
+    32 STU
+    s1 s5 XCHG
+    32 STU
+    s1 s5 XCHG
+    STDICT
+    ENDC
+    CTOS
+    s0 s3 s4 XCHG3
+    10 PUSHPOW2DEC
+    PFXDICTREPLACE
+    DROP
+    SWAP
+    INC
+    s0 s2 XCHG
+    store_short_data CALLDICT
+  }>
   dnsregistrar PROC:<{
     load_short_data CALLDICT
     OVER
@@ -421,15 +561,24 @@ PROGRAM{
       dnsregistrar CALLDICT
     }>
     s4 POP
-    s0 s3 XCHG
-    16 LDI
-    LDREF
-    DROP
-    CTOS
-    s0 s2 XCHG
+    OVER
+    7497072 PUSHINT
+    EQUAL
+    IFJMP:<{
+      NIP
+      s0 s2 XCHG
+      changerecord CALLDICT
+    }>
+    SWAP
     7497064 PUSHINT
     EQUAL
     IFJMP:<{
+      s0 s2 XCHG
+      16 LDI
+      LDREF
+      DROP
+      CTOS
+      SWAP
       dnsresolve CALLDICT
       NEWC
       s1 s2 XCHG
@@ -449,7 +598,7 @@ PROGRAM{
       64 PUSHINT
       send_message CALLDICT
     }>
-    4 BLKDROP
+    3 BLKDROP
   }>
   seqno PROC:<{
     c4 PUSH
