@@ -5,20 +5,19 @@
   ."Creates the message body to be sent from a wallet to registr new subdomain." cr
   ."The result is saved into <savefile> (`dns-registrar-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to elections smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
 } : usage
-$# 1- -8 and ' usage if
+$# 1- -7 and ' usage if
 true constant bounce
 
-$1 parse-int =: dn_len    
-$2 =: dn    
-$3 parse-int =: c  
-$4 parse-int =: mn    
-$5 bounce parse-load-address =: bounce 2=: i    
-$6 bounce parse-load-address =: bounce 2=: ow    
-$7 (number) 1 <> { 0 } if dup 0<= abort"<expirational-utime> must be a positive integer"
+$1 =: dn    
+$2 parse-int =: c  
+$3 parse-int =: mn    
+$4 bounce parse-load-address =: bounce 2=: i    
+$5 bounce parse-load-address =: bounce 2=: ow    
+$6 (number) 1 <> { 0 } if dup 0<= abort"<expirational-utime> must be a positive integer"
 constant et    
-$8 (number) 1 <> { 0 } if dup 0<= abort"<caching-utime> must be a positive integer"
+$7 (number) 1 <> { 0 } if dup 0<= abort"<caching-utime> must be a positive integer"
 constant ct    
-def? $9 { @' $9 } { "dns-registrar-query.boc" } cond constant output_fname
+def? $8 { @' $9 } { "dns-registrar-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-registrar message is set to " query_id . cr
 <b mn 32 i, i addr, ow addr, b> 

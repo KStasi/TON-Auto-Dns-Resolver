@@ -70,11 +70,19 @@ int lnow() method_id {
 
 
 ;; send answer for debug 
-() send_answer(addr, query_id, ans_tag, mode) impure {
-  ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool src:MsgAddress -> 011000
-  send_raw_message(begin_cell().store_uint(0x18, 6).store_slice(addr).store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1).store_uint(ans_tag, 32).store_uint(query_id, 64).end_cell(), mode);
+() send_message_back(slice addr, int op, int query_id, slice msg_body, int grams, int mode) impure {
+  var msg = begin_cell()
+    .store_uint(0x18, 6)
+    .store_slice(addr)
+    .store_grams(grams)
+    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+    .store_uint(op, 32)
+    .store_uint(query_id, 64);
+  ifnot (msg_body.slice_empty?()) {
+    msg = msg.store_slice(msg_body);
+  }
+  send_raw_message(msg.end_cell(), mode);
 }
-
 (int, int, int, int, int) get_payment_info() method_id {
   var (seqno, dnst, pk, std_payment, std_time, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
   return (2 << std_payment, std_time, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
@@ -137,7 +145,7 @@ int lnow() method_id {
       .store_uint(0xc4ff, 17)
       .store_uint(rsl_addr, 256)
       .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
-      .store_uint(0x3440B9, 32)
+      .store_uint(0x344090, 32)
       .store_uint(lnow(), 64)
       .store_slice(msg_body)
       .end_cell();
@@ -202,7 +210,7 @@ int lnow() method_id {
       .store_uint(0xc4ff, 17)
       .store_uint(rsl_addr, 256)
       .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
-      .store_uint(0x726567, 32)
+      .store_uint(0x726568, 32)
       .store_uint(query_id, 64)
       .store_ref(begin_cell().store_slice(left).end_cell())
       .store_dict(cdn_value)
@@ -245,6 +253,7 @@ int lnow() method_id {
     ;; ignore all bounced messages
     return ();
   }
+  var s_addr = cs~load_msg_addr();
   if (in_msg.slice_empty?()) {
     ;; inbound message has empty body
     return ();
@@ -258,10 +267,15 @@ int lnow() method_id {
   if (op == 0x726567) {
     return dnsregistrar(query_id, msg_value, in_msg);
   }
-  if (op == 0x3440B9) {
-    var (dn, c) = in_msg.load_int(16);
-    dnsresolve(dn, c);
-    return ();
+  int c = in_msg~load_int(16);
+  slice dn = in_msg~load_ref().begin_parse();
+  if (op == 0x726568) {
+    (int len, cell dns_record) = dnsresolve(dn, c);
+    cell msg_body = begin_cell()
+      .store_uint(len, 32)
+      .store_ref(dns_record)
+      .end_cell();
+    return send_message_back(s_addr, op, query_id, msg_body.begin_parse(), 0, 64);
   }  
   return ();
 }
