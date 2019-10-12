@@ -70,9 +70,9 @@ int lnow() method_id {
 
 
 ;; send answer for debug 
-() send_message_back(slice addr, int op, int query_id, slice msg_body, int grams, int mode) impure {
+() send_message(int type, int type_len, slice addr, int op, int query_id, slice msg_body, int grams, int mode) impure {
   var msg = begin_cell()
-    .store_uint(0x18, 6)
+    .store_uint(type, type_len)
     .store_slice(addr)
     .store_grams(grams)
     .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
@@ -95,7 +95,7 @@ int lnow() method_id {
   ;;return (1500 + et - lnow() + cdn_bits + cdn_refs * 4);
 }
 
-(int, cell) dnsresolve(slice dn, int c) method_id(-7) {
+(int, cell) dnsresolve(slice dn, int c)  impure  method_id(-7) {
   (int stored_seqno, cell dnst, slice other) = load_short_data();
 
   if (dnst.null?()) {
@@ -129,28 +129,28 @@ int lnow() method_id {
     } 
     ;; look for methods
     slice rsl = nxt_rsl.begin_parse();
-    (int mn, int i, int rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_uint(256));
+    (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
   
     ;; create msg
     ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 110
     ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
     ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
     ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
-    slice msg_body = begin_cell()
-      .store_slice(left)
+    cell msg_body = begin_cell()
+      .store_ref(begin_cell().store_slice(left).end_cell())
       .store_int(c, 16)
-      .end_cell()
-      .begin_parse();
-    var msg = begin_cell()
-      .store_uint(0xc4ff, 17)
-      .store_uint(rsl_addr, 256)
-      .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
-      .store_uint(0x344090, 32)
-      .store_uint(lnow(), 64)
-      .store_slice(msg_body)
       .end_cell();
-    send_raw_message(msg, 64);
-
+    ;; var msg = begin_cell()
+    ;;   .store_uint(0xc4ff, 17)
+    ;;   .store_uint(rsl_addr, 256)
+    ;;   .store_grams(1 << 30)
+    ;;   .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+    ;;   .store_uint(0x726567, 32)
+    ;;   .store_uint(lnow(), 64)
+    ;;   .store_slice(msg_body)
+    ;;   .end_cell();
+    ;; send_raw_message(msg, 0);
+    send_message(0xc4ff, 17, rsl_addr, 0x726568, lnow(), msg_body.begin_parse(), 1 << 30, 0);
     return (prx.slice_bits() / 8 + 1, nxt_rsl);
   }
   return (0,  new_dict()); 
@@ -202,22 +202,16 @@ int lnow() method_id {
     } 
     ;; look for methods
     slice rsl = nxt_rsl.begin_parse();
-    (int mn, int i, int rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_uint(256));
+    (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
 
     ;; create msg
-
-    var msg = begin_cell()
-      .store_uint(0xc4ff, 17)
-      .store_uint(rsl_addr, 256)
-      .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
-      .store_uint(0x726568, 32)
-      .store_uint(query_id, 64)
+    cell msg_body = begin_cell()
       .store_ref(begin_cell().store_slice(left).end_cell())
       .store_dict(cdn_value)
       .store_uint(et, 32)
-      .store_uint(ct, 32);
-    send_raw_message(msg.end_cell(), 64);
-    return ();
+      .store_uint(ct, 32)
+      .end_cell();
+    return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
   }
 
   slice dn_value = begin_cell().store_uint(et, 32).store_uint(ct, 32).store_dict(cdn_value).end_cell().begin_parse();
@@ -242,7 +236,6 @@ int lnow() method_id {
   }
   cs.end_parse();
   store_short_data(stored_seqno + 1, dnst, other);
-  ;;store_data(seqno + 1, dnst, pk, std_payment, std_time, ext_tm_payment, ext_bit_payment, ext_ref_payment);
 }
 
 ;; receive internal msg
@@ -275,7 +268,7 @@ int lnow() method_id {
       .store_uint(len, 32)
       .store_ref(dns_record)
       .end_cell();
-    return send_message_back(s_addr, op, query_id, msg_body.begin_parse(), 0, 64);
+    return send_message(0x18, 6, s_addr, 0x726569, query_id, msg_body.begin_parse(), 0, 64);
   }  
   return ();
 }

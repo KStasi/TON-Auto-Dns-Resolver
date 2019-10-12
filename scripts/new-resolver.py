@@ -12,7 +12,7 @@ send_dns_query = '"sendfile ../auto_dns_resolver/new-dns-query.boc\n"'
 make_hardcopy = 'screen -S iced -p 0 -X hardcopy "hardscreen"\n'
 
 last = '"last\n"'
-prepare_registrar_end = ' 1'
+prepare_registrar_end = ' 1.5'
 code =  ' -B dns-resolver-query.boc'
 
 os.system(compile_cmd)

@@ -5,7 +5,7 @@ PROGRAM{
   DECLPROC load_short_data
   DECLPROC store_data
   DECLPROC store_short_data
-  DECLPROC send_message_back
+  DECLPROC send_message
   110403 DECLMETHOD get_payment_info
   67845 DECLMETHOD calc_cost
   -7 DECLMETHOD dnsresolve
@@ -63,19 +63,19 @@ PROGRAM{
     ENDC
     c4 POP
   }>
-  send_message_back PROC:<{
+  send_message PROC:<{
     0 PUSHINT
-    24 PUSHINT
     NEWC
-    6 STU
-    s0 s7 XCHG2
+    s9 s0 s8 XCHG3
+    STUX
+    s0 s5 XCHG2
     STSLICER
-    ROT
+    s0 s4 XCHG2
     STGRAMS
-    s1 s5 XCHG
+    s1 s4 XCHG
     107 STU
-    s1 s3 XCHG
     32 STU
+    s1 s2 XCHG
     64 STU
     OVER
     SEMPTY
@@ -194,34 +194,30 @@ PROGRAM{
       NIP
       8 LDI
       NIP
-      256 LDU
+      256 LDSLICE
       DROP
       NEWC
       s0 s5 XCHG2
       STSLICER
+      ENDC
+      NEWC
+      STREF
       s1 s3 XCHG
       16 STI
       ENDC
-      CTOS
-      lnow CALLDICT
-      3424400 PUSHINT
-      0 PUSHINT
       50431 PUSHINT
-      NEWC
-      17 STU
-      s1 s7 XCHG
-      256 STU
-      s1 s6 XCHG
-      111 STU
-      s1 s5 XCHG
-      32 STU
-      s1 s4 XCHG
-      64 STU
-      s0 s3 XCHG2
-      STSLICER
-      ENDC
-      64 PUSHINT
-      SENDRAWMSG
+      17 PUSHINT
+      7497064 PUSHINT
+      lnow CALLDICT
+      s0 s4 XCHG
+      CTOS
+      30 PUSHPOW2
+      s4 s6 XCHG
+      s3 s5 XCHG
+      s4 s8 XCHG
+      s2 s3 XCHG
+      0 PUSHINT
+      send_message CALLDICT
       SWAP
       SBITS
       3 RSHIFT#
@@ -312,33 +308,33 @@ PROGRAM{
       NIP
       8 LDI
       NIP
-      256 LDU
+      256 LDSLICE
       DROP
       NEWC
       ROT
       STSLICER
       ENDC
-      7497064 PUSHINT
-      0 PUSHINT
-      50431 PUSHINT
       NEWC
-      17 STU
-      s1 s4 XCHG
-      256 STU
+      STREF
       s1 s3 XCHG
-      111 STU
+      STDICT
+      s1 s3 XCHG
+      32 STU
       s1 s2 XCHG
       32 STU
-      s1 s5 XCHG
-      64 STU
-      s1 s4 XCHG
-      STREF
-      STDICT
-      32 STU
-      32 STU
       ENDC
+      50431 PUSHINT
+      17 PUSHINT
+      7497063 PUSHINT
+      s0 s3 XCHG
+      CTOS
+      0 PUSHINT
+      s3 s6 XCHG
+      s2 s5 XCHG
+      s2 s4 XCHG
+      s2 s3 XCHG
       64 PUSHINT
-      SENDRAWMSG
+      send_message CALLDICT
     }>
     2DROP
     s7 POP
@@ -430,25 +426,30 @@ PROGRAM{
     LDREF
     DROP
     CTOS
-    s2 PUSH
+    s0 s2 XCHG
     7497064 PUSHINT
     EQUAL
     IFJMP:<{
-      SWAP
       dnsresolve CALLDICT
       NEWC
       s1 s2 XCHG
       32 STU
       STREF
       ENDC
+      24 PUSHINT
+      6 PUSHINT
+      7497065 PUSHINT
+      s0 s3 XCHG
       CTOS
       0 PUSHINT
-      s3 s4 XCHG
+      s3 s6 XCHG
+      s2 s5 XCHG
+      s2 s4 XCHG
       s2 s3 XCHG
       64 PUSHINT
-      send_message_back CALLDICT
+      send_message CALLDICT
     }>
-    5 BLKDROP
+    4 BLKDROP
   }>
   seqno PROC:<{
     c4 PUSH
