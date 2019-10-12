@@ -14,7 +14,7 @@ def? $2 { @' $2 } { "new-dns" } cond constant file-base
 ."Creating new wallet in workchain " wc . cr
 
 "Asm.fif" include
-"dns-resolver.fif" include
+"dns.fif" include
 <b 0 32 u,
    dictnew dict, 
    file-base +".pk" load-generate-keypair

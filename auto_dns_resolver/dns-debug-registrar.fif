@@ -1,7 +1,7 @@
 #!/usr/bin/env fift -s
 
 "Asm.fif" include
-"dns-resolver.fif" include
+"dns.fif" include
 constant code
 
 <b 0 32 u,

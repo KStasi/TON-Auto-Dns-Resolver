@@ -121,7 +121,7 @@ int lnow() method_id {
     } 
     ;; look for methods
     slice rsl = nxt_rsl.begin_parse();
-    (int magic_number, slice identifier) = (rsl~load_int(32), rsl~load_msg_addr());
+    (int mn, int i, int rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_uint(256));
   
     ;; create msg
     ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 110
@@ -134,15 +134,15 @@ int lnow() method_id {
       .end_cell()
       .begin_parse();
     var msg = begin_cell()
-      .store_uint(0x18, 6)
-      .store_slice(identifier)
+      .store_uint(0xc4ff, 17)
+      .store_uint(rsl_addr, 256)
       .store_uint(0, 5 + 4 + 4 + 64 + 32 + 1 + 1)
-      .store_uint(magic_number, 32)
+      .store_uint(0x3440B9, 32)
       .store_uint(lnow(), 64)
       .store_slice(msg_body)
       .end_cell();
     send_raw_message(msg, 64);
-    ;; fix len
+
     return (prx.slice_bits() / 8 + 1, nxt_rsl);
   }
   return (0,  new_dict()); 
@@ -265,20 +265,6 @@ int lnow() method_id {
   }  
   return ();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ;; Get methods
 
