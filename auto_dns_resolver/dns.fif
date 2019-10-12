@@ -341,14 +341,14 @@ PROGRAM{
     CTOS
     8 LDI
     NIP
-    256 LDSLICE
+    256 LDU
     DROP
     s0 s7 XCHG
-    8 PUSHINT
-    SDSKIPFIRST
-    s0 s7 XCHG2
-    SDLEXCMP
-    IFJMP:<{
+    REWRITESTDADDR
+    NIP
+    s1 s7 XCHG
+    EQUAL
+    IFNOTJMP:<{
       7 BLKDROP
     }>
     NEWC

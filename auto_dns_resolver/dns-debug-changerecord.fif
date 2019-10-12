@@ -1,0 +1,83 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+"dns.fif" include
+constant code
+
+<b 0 32 u,
+   dictnew dict, 
+   "new-dns.pk" load-generate-keypair
+   constant wallet_pk
+   B, 
+   4 6 u,
+   31556952 32 u,
+   1 6 u,
+   1 6 u,
+   1 6 u,
+b> constant storage
+
+{ ."usage: " @' $0 type ." <filename-base> <dest-addr> <seqno> <amount> [-B <body-boc>] [<savefile>]" cr
+  ."Creates a request to simple wallet created by new-wallet.fif, with private key loaded from file <filename-base>.pk "
+  ."and address from <filename-base>.addr, and saves it into <savefile>.boc ('wallet-query.boc' by default)" cr 1 halt
+} : usage
+def? $8 { @' $7 "-B" $= { @' $8 =: body-boc-file [forget] $8 def? $9 { @' $9 =: $7 [forget] $9 } { [forget] $7 } cond
+  @' $# 2- =: $# } if } if
+$# dup 6 < swap 7 > or ' usage if
+
+true constant bounce
+
+$1 =: file-base
+$2 bounce parse-load-address =: bounce 2=: dest_addr
+$3 parse-int =: seqno
+$4 $>GR =: amount
+$5 =: domain_name
+$6 parse-int =: category
+def? $7 { @' $7 } { "wallet-query" } cond constant savefile
+3 constant send-mode  
+"dns-changerecord-query.boc" constant body-boc-file2
+
+file-base +".addr" load-address
+2dup 2constant wallet_addr
+."Source wallet address = " 2dup .addr cr 6 .Addr cr
+file-base +".pk" load-keypair nip constant wallet_pk
+
+def? body-boc-file { @' body-boc-file file>B B>boc } { <b b> } cond
+constant body-cell
+
+def? body-boc-file2 { @' body-boc-file2 file>B B>boc } { <b b> } cond
+constant body-cell2
+
+."Transferring " amount .GR ."to account "
+dest_addr 2dup bounce 7 + .Addr ." = " .addr 
+."seqno=0x" seqno x. ."bounce=" bounce . cr
+."Body of transfer message is " body-cell <s csr. cr
+
+// create a message
+<b b{0100} s, bounce 1 i, b{000100} s, dest_addr addr, amount Gram, 0 9 64 32 + + 1+ u, 
+  body-cell <s 2dup s-fits? not rot over 1 i, -rot { drop body-cell ref, } { s, } cond
+b>  constant arg1 
+
+<b b{0100} s, bounce 1 i, b{000100} s, dest_addr addr, amount Gram, 0 9 64 32 + + 1+ u, 
+  body-cell2 <s 2dup s-fits? not rot over 1 i, -rot { drop body-cell2 ref, } { s, } cond
+b>  constant arg2 
+
+amount arg1 body-cell <s  0 code storage  runvm 
+
+constant updated_storage
+constant exit_code
+."Exit code " exit_code . cr
+."Updated storage: " cr updated_storage <s csr. cr
+
+amount arg2 body-cell2 <s  0 code updated_storage  runvm 
+constant updated_storage
+constant exit_code
+."Exit code " exit_code . cr
+."Updated storage: " cr updated_storage <s csr. cr
+
+<b domain_name $, b> <s category -7 code updated_storage runvm 
+
+constant updated_storage
+constant exit_code
+."Exit code " exit_code . cr
+."Updated storage: " cr updated_storage <s csr. cr
+.s

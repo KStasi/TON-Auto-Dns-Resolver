@@ -31,8 +31,8 @@ int lnow() method_id {
   return (cs~load_uint(32), 
     cs~load_dict(),
     cs~load_uint(256),
-    cs~load_uint(6),
     cs~load_uint(32),
+    cs~load_uint(6),
     cs~load_uint(6),
     cs~load_uint(6),
     cs~load_uint(6));
@@ -45,13 +45,13 @@ int lnow() method_id {
 }
 
 ;; store persistant data
-() store_data(int seqno, cell dnst, int pk, int std_payment, int std_time, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) impure {
+() store_data(int seqno, cell dnst, int pk, int std_time, int std_payment, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) impure {
   set_data(begin_cell()
     .store_uint(seqno, 32)
     .store_dict(dnst)
     .store_uint(pk, 256)
-    .store_uint(std_payment, 6)
     .store_uint(std_time, 32)
+    .store_uint(std_payment, 6)
     .store_uint(ext_tm_payment, 6)
     .store_uint(ext_bit_payment, 6)
     .store_uint(ext_ref_payment, 6)
@@ -83,7 +83,7 @@ int lnow() method_id {
   send_raw_message(msg.end_cell(), mode);
 }
 (int, int, int, int, int) get_payment_info() method_id {
-  var (seqno, dnst, pk, std_payment, std_time, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
+  var (seqno, dnst, pk, std_time, std_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
   return (2 << std_payment, std_time, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
 }
 
@@ -203,8 +203,9 @@ int lnow() method_id {
 
   ;; auth
   slice rsl = nxt_rsl.begin_parse();
-  (int wc, slice rsl_addr) = (rsl~load_int(8), rsl~load_bits(256));
-  if (cmp_slice(s_addr.skip_bits(8), rsl_addr)) {
+  (int wc, int rsl_addr) = (rsl~load_int(8), rsl~load_uint(256));
+  var (src_wc, src_addr) = parse_std_addr(s_addr);
+  ifnot (rsl_addr == src_addr) {
     return();
   }
 
@@ -216,6 +217,7 @@ int lnow() method_id {
 () dnsregistrar(int query_id, int msg_value, slice in_msg) impure {
   ;; extract data
   (int stored_seqno, cell dnst, slice other) = load_short_data();
+  std_time = other.preload_uint();
     
   ;; if no table exist, create
   if (dnst.null?()) {
@@ -237,7 +239,7 @@ int lnow() method_id {
   ;; check params
   (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
 
-  if ((price > msg_value) | (ct < lnow()) | (et < lnow())) {
+  if ((price > msg_value) | (et < std_time) | (et < lnow()) | (ct < lnow())) {
     return();
   }
 
