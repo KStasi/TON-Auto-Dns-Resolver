@@ -5,7 +5,7 @@
   ."Creates the message body to be sent from a wallet to resolve existed subdomain recursively." cr
   ."The result is saved into <savefile> (`dns-resolver-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to DNS smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
 } : usage
-$# 1- -3 and ' usage if
+$# 1- -2 and ' usage if
 true constant bounce
 
 $1 =: dn    
