@@ -18,10 +18,11 @@ def? $2 { @' $2 } { "new-dns" } cond constant file-base
 <b 0 32 u,
    dictnew dict, 
    file-base +".pk" load-generate-keypair
-   constant wallet_pk 
-   B, 
-   4 6 u,
+   constant wallet_pk
+   B,
    31556952 32 u,
+   4 6 u,
+   2 6 u,
    1 6 u,
    1 6 u,
    1 6 u,

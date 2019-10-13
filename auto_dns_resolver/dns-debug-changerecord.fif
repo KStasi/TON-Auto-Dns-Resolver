@@ -7,10 +7,11 @@ constant code
 <b 0 32 u,
    dictnew dict, 
    "new-dns.pk" load-generate-keypair
-   constant wallet_pk
+   constant wallet_pk 
    B, 
-   4 6 u,
    31556952 32 u,
+   4 6 u,
+   2 6 u,
    1 6 u,
    1 6 u,
    1 6 u,
@@ -74,7 +75,7 @@ constant exit_code
 ."Exit code " exit_code . cr
 ."Updated storage: " cr updated_storage <s csr. cr
 
-<b domain_name $, b> <s category -7 code updated_storage runvm 
+<b domain_name $, 0 8 u, b> <s category -7 code updated_storage runvm 
 
 constant updated_storage
 constant exit_code

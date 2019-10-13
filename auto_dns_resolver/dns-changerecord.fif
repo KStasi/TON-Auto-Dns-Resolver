@@ -19,8 +19,8 @@ now constant query_id
 <b mn 32 i, i addr, ow addr, b> 
 <b swap ref, b>
 <s c dictnew 16 idict! drop
-<b dn $, b>
-<b 0x726570 32 u, query_id 64 u, 1 roll ref, 1 roll dict, b>
+<b dn $, 0 8 u, b>
+<b 0x726570 32 u, query_id 64 u, 1 roll ref, 0 1 u, 1 roll dict, b>
 cr ."Message body is " dup <s csr. cr
 
 2 boc+>B output_fname tuck B>file ."Saved to file " type cr
