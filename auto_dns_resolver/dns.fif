@@ -528,13 +528,14 @@ PROGRAM{
     DUP
     32 LDU
     load_short_data CALLDICT
-    256 LDU
+    DUP
+    256 PLDU
     s5 s3 XCPU
     EQUAL
     33 THROWIFNOT
     s0 s5 XCHG
     HASHSU
-    s0 s6 s5 XCHG3
+    s0 s6 s4 XCHG3
     CHKSIGNU
     34 THROWIFNOT
     ACCEPT
@@ -547,7 +548,6 @@ PROGRAM{
       SENDRAWMSG
     }>
     ENDS
-    SWAP
     INC
     -ROT
     store_short_data CALLDICT

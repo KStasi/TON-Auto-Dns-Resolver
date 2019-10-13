@@ -28,7 +28,7 @@ def? $2 { @' $2 } { "new-dns" } cond constant file-base
    1 6 u,
 b>
 null
-<b b{0011} s, 3  roll ref, rot ref, swap dict, b>  // create StateInit
+<b b{0011} s, 3  roll ref, rot ref, swap .s dict,  b>  // create StateInit
 dup ."StateInit: " <s csr. cr
 dup hashu wc swap 2dup 2constant wallet_addr
 ."new DNS servise address = " 2dup .addr cr

@@ -297,7 +297,7 @@ int lnow() method_id {
   var cs = in_msg;
   int msg_seqno = cs~load_uint(32);
   (int stored_seqno, cell dnst, slice other) = load_short_data();
-  int pk = other~load_uint(256);
+  int pk = other.preload_uint(256);
   throw_unless(33, msg_seqno == stored_seqno);
   throw_unless(34, check_signature(slice_hash(in_msg), signature, pk));
   accept_message();
