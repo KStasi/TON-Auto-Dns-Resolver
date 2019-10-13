@@ -1,11 +1,11 @@
 #!/usr/bin/env fift -s
 "TonUtil.fif" include
 
-{ ."usage: " @' $0 type ."<domain-name> <category> <magic-number> <identifier> <owner> <expirational-time> <caching-time> [<savefile>]" cr
-  ."Creates the message body to be sent from a wallet to registr new subdomain." cr
-  ."The result is saved into <savefile> (`dns-registrar-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to elections smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
+{ ."usage: " @' $0 type ."<domain-name> <category> <magic-number> <identifier> <owner> [<savefile>]" cr
+  ."Creates the message body to be sent from a wallet to change existed record of subdomain." cr
+  ."The result is saved into <savefile> (`dns-changerecord-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to DNS smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
 } : usage
-$# 1- -5 and ' usage if
+$# 1- -6 and ' usage if
 true constant bounce
 
 $1 =: dn    
@@ -13,9 +13,9 @@ $2 parse-int =: c
 $3 parse-int =: mn    
 $4 bounce parse-load-address =: bounce 2=: i    
 $5 bounce parse-load-address =: bounce 2=: ow      
-def? $6 { @' $7 } { "dns-changerecord-query.boc" } cond constant output_fname
+def? $6 { @' $6 } { "dns-changerecord-query.boc" } cond constant output_fname
 now constant query_id
-."query_id for dns-registrar message is set to " query_id . cr
+."query_id for dns-changerecord message is set to " query_id . cr
 <b mn 32 i, i addr, ow addr, b> 
 <b swap ref, b>
 <s c dictnew 16 idict! drop

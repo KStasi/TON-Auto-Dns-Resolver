@@ -279,6 +279,8 @@ PROGRAM{
       9 BLKDROP
     }>
     CTOS
+    32 LDI
+    NIP
     8 LDI
     NIP
     256 LDU
@@ -580,4 +582,4 @@ PROGRAM{
   getinfo PROC:<{
     load_data CALLDICT
   }>
-}END>s
+}END>c

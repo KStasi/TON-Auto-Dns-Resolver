@@ -173,7 +173,7 @@ int lnow() method_id {
 
   ;; auth
   slice rsl = nxt_rsl.begin_parse();
-  (int wc, int rsl_addr) = (rsl~load_int(8), rsl~load_uint(256));
+  (int mn, int wc, int rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_uint(256));
   var (src_wc, src_addr) = parse_std_addr(s_addr);
   ifnot (rsl_addr == src_addr) {
     return();
