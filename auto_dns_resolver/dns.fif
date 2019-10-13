@@ -120,12 +120,12 @@ PROGRAM{
     getpayment CALLDICT
     s3 POP
     s7 PUSH
-    lnow CALLDICT
+    NOW
     SUB
     s5 PUSH
     LESS
     98 THROWIF
-    lnow CALLDICT
+    NOW
     s1 s8 XCHG
     SUB
     s0 s4 XCHG2
@@ -187,7 +187,7 @@ PROGRAM{
       CTOS
       32 LDU
       DROP
-      lnow CALLDICT
+      NOW
       LESS
       IFJMP:<{
         5 BLKDROP
@@ -491,10 +491,10 @@ PROGRAM{
     LESS
     90 THROWIFNOT
     s7 PUSH
-    lnow CALLDICT
+    NOW
     GREATER
     OVER
-    lnow CALLDICT
+    NOW
     GREATER
     OR
     93 THROWIFNOT
@@ -566,7 +566,7 @@ PROGRAM{
       IFNOT:<{
         CTOS
         32 PLDU
-        lnow CALLDICT
+        NOW
         GREATER
         97 THROWIF
       }>ELSE<{

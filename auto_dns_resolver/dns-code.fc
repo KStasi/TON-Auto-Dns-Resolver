@@ -85,8 +85,8 @@ int lnow() method_id {
   ;; std_payment + payment_per_seconds + payment_per_bit + payment_per_ref
   ;; caching time has no effect
   (int std_time, int std_payment, int std_change_payment, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) = getpayment();
-  throw_if(98, et - lnow() < std_time);
-  return (std_payment + (et - lnow() - std_time) * ext_tm_payment + cdn_bits * ext_bit_payment + cdn_refs * ext_ref_payment);
+  throw_if(98, et - now() < std_time);
+  return (std_payment + (et - now() - std_time) * ext_tm_payment + cdn_bits * ext_bit_payment + cdn_refs * ext_ref_payment);
   ;;return (1500 + et + cdn_bits + cdn_refs * 4);
 }
 
@@ -115,7 +115,7 @@ int lnow() method_id {
     slice stm_rcd = tm_rcd.begin_parse();
     (int et, int ct) = (stm_rcd~load_uint(32), stm_rcd~load_uint(32));
 
-    if (et < lnow()) {
+    if (et < now()) {
       return (0, new_dict());
     }
 
@@ -275,7 +275,7 @@ int lnow() method_id {
   (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
 
   throw_unless(90, price < msg_value);
-  throw_unless(93, (et > lnow()) | (ct > lnow()));
+  throw_unless(93, (et > now()) | (ct > now()));
 
   ;; check whether it is current contract responsibility
   (int len, cell dns_record) = dnsresolve(dn, 0);
@@ -304,7 +304,7 @@ int lnow() method_id {
     ;; check expiration time
     ifnot (tm_rcd.null?()) {
       int et = tm_rcd.begin_parse().preload_uint(32);
-      throw_if(97, et > lnow());
+      throw_if(97, et > now());
     }
   }
   
