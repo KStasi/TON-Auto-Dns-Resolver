@@ -5,16 +5,9 @@
 (cell, int) prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
 (cell, int) prxdict_replace(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTREPLACE";
 (cell, (int)) ~prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
-(cell, ()) ~dict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "DICTSET";
-(slice, int) dict_get?(cell dict, int key_len, int index) asm(index dict key_len) "DICTGET" "NULLSWAPIFNOT";
-(slice, slice, int) dict_get_preve?(cell dict, int key_len, slice pivot) asm(pivot dict key_len -> 1 0 2) "DICTGETPREVEQ" "NULLSWAPIFNOT" "NULLSWAPIFNOT";
-(slice) get_last(slice s, int n) asm "SDCUTLAST";
-(int) get_trail0(slice s) asm "SDCNTTRAIL0";
 (builder) set_zeros(builder b, int n) asm "STZEROES";
-(int) cmp_slice(slice s0, slice s1) asm "SDLEXCMP";
+(int) get_trail_zeros(slice s) asm "SDCNTTRAIL0";
 
-;; cell dict_set_op_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETGETREF";
-;; (cell, ()) ~dict_set_op_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETGETREF";
 cell dict_set_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETREF";
 (cell, ()) ~dict_set_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETREF";
 (cell, (cell)) ~dict_set_op_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETGETOPTREF";
@@ -23,7 +16,6 @@ cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len
 int lnow() method_id {
   return 1570558743;
 }
-
 
 ;; load persistant data
 (int, cell, int, int, int, int, int, int) load_data() {
@@ -82,6 +74,7 @@ int lnow() method_id {
   }
   send_raw_message(msg.end_cell(), mode);
 }
+
 (int, int, int, int, int) get_payment_info() method_id {
   var (seqno, dnst, pk, std_time, std_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
   return (2 << std_payment, std_time, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
@@ -113,34 +106,15 @@ int lnow() method_id {
     ;; the whole domain found
     if (left.slice_empty?()) {
       if (c == 0) {
-        return (dn_len / 8 + 1, hshm);
+        return (dn_len / 8, hshm);
       }
       cell dns_record = hshm.idict_get_ref(16, c);
-      return (dn_len / 8 + 1, dns_record);
+      return (dn_len / 8, dns_record);
     }
 
     ;; try to find next dns resolver
     cell nxt_rsl = hshm.idict_get_ref(16, -1);
- 
-    if (nxt_rsl.null?()) {
-      ;; resolver not found
-      return (prx.slice_bits() / 8 + 1, nxt_rsl);
-    } 
-    ;; look for methods
-    slice rsl = nxt_rsl.begin_parse();
-    (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
-  
-    ;; create msg
-    ;; int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool -> 0 110
-    ;; src:MsgAddress dest:MsgAddressInt -> 00 identifier 
-    ;; value:CurrencyCollection ihr_fee:Grams fwd_fee:Grams -> 00000 0000 0000
-    ;; created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed; -> 64 zero bits 32 zero bits
-    cell msg_body = begin_cell()
-      .store_ref(begin_cell().store_slice(left).end_cell())
-      .store_int(c, 16)
-      .end_cell();
-    send_message(0xc4ff, 17, rsl_addr, 0x726568, lnow(), msg_body.begin_parse(), 1 << 30, 0);
-    return (prx.slice_bits() / 8 + 1, nxt_rsl);
+    return (prx.slice_bits() / 8, nxt_rsl);
   }
   return (0,  new_dict()); 
 }
@@ -160,34 +134,30 @@ int lnow() method_id {
   cell cdn_value = in_msg~load_dict();
   slice dns_hshm = cdn_value.begin_parse();
   
-  var (prx, val, left, f) = dnst.prxdict_getq(1023, dn);
-  if (f & (left.slice_empty?() == 0)) {
-    ;; substract hashmap
-    var (etv, ctv, hshm) = (val~load_uint(32), val~load_uint(32), val~load_dict());
-    if (hshm.null?() | (etv < lnow())) {
-      return ();
-    }
+  (int len, cell dns_record) = dnsresolve(dn, 0);
+  int left = dn_len - len * 8;
+  
+  ;; check if record with owner exists
+  if (dns_record.null?()) {
+    return ();
+  }
 
-    ;; try to find next dns resolver
-    cell nxt_rsl = hshm.idict_get_ref(16, -1);
- 
-    if (nxt_rsl.null?()) {
-      ;; resolver not found
-      return ();
-    } 
+  ;; otherwise try to resend request
+  if (left) {
     ;; look for methods
-    slice rsl = nxt_rsl.begin_parse();
+    slice rsl = dns_record.begin_parse();
     (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
 
     ;; create msg
     cell msg_body = begin_cell()
-      .store_ref(begin_cell().store_slice(left).end_cell())
+      .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
       .store_dict(cdn_value)
       .end_cell();
-    return send_message(0xc4ff, 17, rsl_addr, 0x726570, query_id, msg_body.begin_parse(), 0, 64);
+    return send_message(0xc4ff, 17, rsl_addr, 0x726570, query_id, msg_body.begin_parse(), 0, 64);  
   }
 
   ;; set new value
+  slice val = dns_record.begin_parse();
   var (et, ct, hshm) = (val~load_uint(32), val~load_uint(32), val~load_dict());
   if (hshm.null?() | (et < lnow())) {
     return ();
@@ -197,7 +167,7 @@ int lnow() method_id {
   cell nxt_rsl = hshm.idict_get_ref(16, -2);
  
   if (nxt_rsl.null?()) {
-    ;; resolver not found
+    ;; owner not found
     return ();
   }
 
@@ -217,7 +187,6 @@ int lnow() method_id {
 () dnsregistrar(int query_id, int msg_value, slice in_msg) impure {
   ;; extract data
   (int stored_seqno, cell dnst, slice other) = load_short_data();
-  std_time = other.preload_uint();
     
   ;; if no table exist, create
   if (dnst.null?()) {
@@ -227,6 +196,12 @@ int lnow() method_id {
   ;; get domain name
   cell cdn = in_msg~load_ref();
   slice dn = cdn.begin_parse();
+
+  ;; check if zero terminated
+  if (get_trail_zeros(dn) < 8) {
+    return();
+  }
+
   int dn_len = dn.slice_bits();
 
   ;; check if valid
@@ -239,40 +214,29 @@ int lnow() method_id {
   ;; check params
   (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
 
-  if ((price > msg_value) | (et < std_time) | (et < lnow()) | (ct < lnow())) {
+  if ((price > msg_value) | (et < lnow()) | (ct < lnow())) {
     return();
   }
 
   ;; check whether it is current contract responsibility
-  var (prx, val, left, f) = dnst.prxdict_getq(1023, dn);
-  if (f) {
-    ;; substract hashmap
-    var (etv, ctv, hshm) = (val~load_uint(32), val~load_uint(32), val~load_dict());
-    if (hshm.null?() | (etv < lnow())) {
-      return ();
-    }
-
-    ;; try to find next dns resolver
-    cell nxt_rsl = hshm.idict_get_ref(16, -1);
+  (int len, cell dns_record) = dnsresolve(dn, 0);
  
-    if (nxt_rsl.null?()) {
-      ;; resolver not found
-      return ();
-    } 
+  ;; otherwise try to resend request
+  if (len & (dns_record.cell_null?() != 0) ) {
     ;; look for methods
-    slice rsl = nxt_rsl.begin_parse();
+    slice rsl = dns_record.begin_parse();
     (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
 
     ;; create msg
     cell msg_body = begin_cell()
-      .store_ref(begin_cell().store_slice(left).end_cell())
+      .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
       .store_dict(cdn_value)
       .store_uint(et, 32)
       .store_uint(ct, 32)
       .end_cell();
     return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
   }
-
+  
   slice dn_value = begin_cell().store_uint(et, 32).store_uint(ct, 32).store_dict(cdn_value).end_cell().begin_parse();
   dnst~prxdict_set(1023, dn, dn_value);
   store_short_data(stored_seqno + 1, dnst, other);
@@ -326,6 +290,20 @@ int lnow() method_id {
     int c = in_msg~load_int(16);
     slice dn = in_msg~load_ref().begin_parse();
     (int len, cell dns_record) = dnsresolve(dn, c);
+
+    ;; continue recursively if need
+    int left = dn.slice_bits() - len * 8;
+    if (left & (dns_record.null?() != 0)) {
+      slice rsl = dns_record.begin_parse();
+      (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
+  
+      cell msg_body = begin_cell()
+        .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
+        .store_int(c, 16)
+        .end_cell();
+      send_message(0xc4ff, 17, rsl_addr, 0x726568, lnow(), msg_body.begin_parse(), 1 << 30, 0);
+    }
+
     cell msg_body = begin_cell()
       .store_uint(len, 32)
       .store_ref(dns_record)

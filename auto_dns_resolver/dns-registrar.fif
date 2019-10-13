@@ -23,7 +23,7 @@ now constant query_id
 <b i addr, ow addr, b> 
 <b swap ref, b>
 <s c dictnew 16 idict! drop
-<b dn $, b>
+<b dn $, 0 8 u, b>
 <b 7497063 32 u, query_id 64 u, 1 roll ref, 1 roll dict, et 32 u, ct 32 u, b>
 cr ."Message body is " dup <s csr. cr
 
