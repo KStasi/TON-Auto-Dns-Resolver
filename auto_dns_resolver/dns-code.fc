@@ -270,7 +270,7 @@ int lnow() method_id {
   (int len, cell dns_record) = dnsresolve(dn, 0);
  
   ;; otherwise try to resend request
-  if (len & (dns_record.cell_null?() != 0) ) {
+  if ((dn_len / 8 - len) & (dns_record.cell_null?() != 0) ) {
     ;; look for methods
     slice rsl = dns_record.begin_parse();
     (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
@@ -283,6 +283,16 @@ int lnow() method_id {
       .store_uint(ct, 32)
       .end_cell();
     return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
+  }
+  if (dns_record.cell_null?() != 0) {
+    ;; restore time
+    cell tm_rcd = dns_record.idict_get_ref(16, 0);
+
+    ;; check expiration time
+    ifnot (tm_rcd.null?()) {
+      int et = tm_rcd.begin_parse().preload_uint(32);
+      throw_if(97, et > lnow());
+    }
   }
   
   cdn_value~idict_set_ref(16, 0, begin_cell().store_uint(et, 32).store_uint(ct, 32).end_cell());

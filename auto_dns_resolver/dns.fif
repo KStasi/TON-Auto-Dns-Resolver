@@ -426,7 +426,9 @@ PROGRAM{
     SDCNTTRAIL0
     8 LESSINT
     92 THROWIF
-    SWAP
+    DUP
+    SBITS
+    s0 s2 XCHG
     LDDICT
     OVER
     CTOS
@@ -438,10 +440,10 @@ PROGRAM{
     2DUP
     s4 s5 XCHG2
     calc_cost CALLDICT
-    s0 s8 XCHG2
+    s0 s9 XCHG2
     LESS
     90 THROWIFNOT
-    s6 PUSH
+    s7 PUSH
     lnow CALLDICT
     GREATER
     OVER
@@ -452,16 +454,19 @@ PROGRAM{
     s2 PUSH
     0 PUSHINT
     dnsresolve CALLDICT
-    DUP
+    s0 s5 XCHG
+    3 RSHIFT#
+    OVER
+    SUB
+    s5 PUSH
     ISNULL
     0 NEQINT
-    s2 s(-1) PUXC
     AND
     IFJMP:<{
       s5 POP
       s5 POP
       s5 POP
-      s0 s2 XCHG
+      SWAP
       CTOS
       32 LDI
       NIP
@@ -470,18 +475,20 @@ PROGRAM{
       256 LDSLICE
       DROP
       NEWC
-      s0 s4 XCHG
+      s0 s3 XCHG
       3 LSHIFT#
       s1 s2 XCHG
       SDSKIPFIRST
-      s1 s3 XCHG
+      s1 s2 XCHG
       STSLICER
       ENDC
       NEWC
       STREF
+      s1 s3 XCHG
       STDICT
       s1 s3 XCHG
       32 STU
+      s1 s2 XCHG
       32 STU
       ENDC
       50431 PUSHINT
@@ -497,8 +504,30 @@ PROGRAM{
       64 PUSHINT
       send_message CALLDICT
     }>
-    2DROP
-    s7 POP
+    DROP
+    s8 POP
+    s2 PUSH
+    ISNULL
+    0 NEQINT
+    IF:<{
+      0 PUSHINT
+      s0 s3 XCHG2
+      16 PUSHINT
+      DICTIGETOPTREF
+      DUP
+      ISNULL
+      IFNOT:<{
+        CTOS
+        32 PLDU
+        lnow CALLDICT
+        GREATER
+        97 THROWIF
+      }>ELSE<{
+        DROP
+      }>
+    }>ELSE<{
+      s2 POP
+    }>
     NEWC
     s1 s6 XCHG
     32 STU
@@ -506,20 +535,20 @@ PROGRAM{
     32 STU
     ENDC
     0 PUSHINT
-    s1 s0 s5 XCHG3
+    s1 s0 s6 XCHG3
     16 PUSHINT
     DICTISETREF
     NEWC
     STDICT
     ENDC
     CTOS
-    s4 s2 XCHG2
+    2SWAP
     10 PUSHPOW2DEC
     PFXDICTSET
     DROP
-    s0 s2 XCHG
+    SWAP
     INC
-    -ROT
+    s0 s2 XCHG
     store_short_data CALLDICT
   }>
   recv_external PROC:<{
