@@ -6,7 +6,7 @@
   ."Creates a new DNS servise in specified workchain, with private key saved to or loaded from <filename-base>.pk" cr
   ."('new-dns.pk' by default)" cr 1 halt
 } : usage
-$# 1- -2 and ' usage if
+$# dup 1 < swap 2 > or ' usage if
 
 $1 parse-workchain-id =: wc
 def? $2 { @' $2 } { "new-dns" } cond constant file-base

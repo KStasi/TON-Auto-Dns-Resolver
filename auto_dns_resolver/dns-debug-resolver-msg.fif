@@ -7,14 +7,15 @@ constant code
 <b 0 32 u,
    dictnew dict, 
    "new-dns.pk" load-generate-keypair
-   constant wallet_pk
+   constant wallet_pk 
    B, 
-   4 6 u,
    31556952 32 u,
+   4 6 u,
+   2 6 u,
    1 6 u,
    1 6 u,
    1 6 u,
-b> constant storage
+b>  constant storage
 
 { ."usage: " @' $0 type ." <filename-base> <dest-addr> <seqno> <amount> [-B <body-boc>] [<savefile>]" cr
   ."Creates a request to simple wallet created by new-wallet.fif, with private key loaded from file <filename-base>.pk "

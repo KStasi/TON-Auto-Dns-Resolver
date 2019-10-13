@@ -5,12 +5,13 @@
 constant code
 
 <b 0 32 u,
-   dictnew dict, .s
+   dictnew dict, 
    "new-dns.pk" load-generate-keypair
-   constant wallet_pk .s
+   constant wallet_pk 
    B, 
-   4 6 u,
    31556952 32 u,
+   4 6 u,
+   2 6 u,
    1 6 u,
    1 6 u,
    1 6 u,

@@ -13,9 +13,6 @@ cell dict_set_ref(cell dict, int key_len, slice index, cell value) asm(value ind
 (cell, (cell)) ~dict_set_op_ref(cell dict, int key_len, slice index, cell value) asm(value index dict key_len) "DICTSETGETOPTREF";
 cell dict_get_op_ref(cell dict, int key_len, slice index) asm(index dict key_len) "DICTGETOPTREF";
 
-() bindump(int f) impure asm "BINDUMP";
-
-
 int lnow() method_id {
   return 1570558743;
 }
@@ -64,7 +61,6 @@ int lnow() method_id {
   .end_cell());
 }
 
-
 ;; send answer for debug 
 () send_message(int type, int type_len, slice addr, int op, int query_id, slice msg_body, int grams, int mode) impure {
   var msg = begin_cell()
@@ -80,7 +76,7 @@ int lnow() method_id {
   send_raw_message(msg.end_cell(), mode);
 }
 
-(int, int, int, int, int, int) get_payment_info() method_id {
+(int, int, int, int, int, int) getpayment() method_id {
   var (seqno, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
   return (std_time, 2 << std_payment, 2 << std_change_payment, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
 }
@@ -88,11 +84,13 @@ int lnow() method_id {
 (int) calc_cost(int et, int ct, int cdn_bits, int cdn_refs) method_id {
   ;; std_payment + payment_per_seconds + payment_per_bit + payment_per_ref
   ;; caching time has no effect
-  return (2000);
-  ;;return (1500 + et - lnow() + cdn_bits + cdn_refs * 4);
+  (int std_time, int std_payment, int std_change_payment, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) = getpayment();
+  throw_if(98, et - lnow() < std_time);
+  return (std_payment + (et - lnow() - std_time) * ext_tm_payment + cdn_bits * ext_bit_payment + cdn_refs * ext_ref_payment);
+  ;;return (1500 + et + cdn_bits + cdn_refs * 4);
 }
 
-(int, cell) dnsresolve(slice dn, int c)  impure  method_id(-7) {
+(int, cell) dnsresolve(slice dn, int c)  impure  method_id {
   (int stored_seqno, cell dnst, slice other) = load_short_data();
 
   if (dnst.null?()) {
@@ -135,6 +133,19 @@ int lnow() method_id {
     return (prx.slice_bits() / 8, nxt_rsl);
   }
   return (0,  new_dict()); 
+}
+
+(int) getexpirationtime(slice dn) method_id {
+  (int len, cell dns_record) = dnsresolve(dn, 0);
+  int dn_len = dn.slice_bits();
+  if (dn_len == len) {
+    cell tm_rcd = dns_record.idict_get_ref(16, 0);
+    if (tm_rcd.null?()) {
+      return (-1);
+    }
+    return (tm_rcd.begin_parse().preload_uint(32));    
+  }
+  return (-1);
 }
 
 () changerecord(int query_id, int msg_value, slice s_addr, slice in_msg) impure {
@@ -270,7 +281,9 @@ int lnow() method_id {
   (int len, cell dns_record) = dnsresolve(dn, 0);
  
   ;; otherwise try to resend request
-  if ((dn_len / 8 - len) & (dns_record.cell_null?() != 0) ) {
+  if (len & (dn_len / 8 - len) ) {
+    throw_if(97, dns_record.null?());
+
     ;; look for methods
     slice rsl = dns_record.begin_parse();
     (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
@@ -284,7 +297,7 @@ int lnow() method_id {
       .end_cell();
     return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
   }
-  if (dns_record.cell_null?() != 0) {
+  ifnot (dns_record.null?()) {
     ;; restore time
     cell tm_rcd = dns_record.idict_get_ref(16, 0);
 
@@ -351,7 +364,7 @@ int lnow() method_id {
 
     ;; continue recursively if need
     int left = dn.slice_bits() - len * 8;
-    if (left & (dns_record.null?() != 0)) {
+    if (left & (dns_record.null?() == 0)) {
       slice rsl = dns_record.begin_parse();
       (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
   
@@ -359,14 +372,22 @@ int lnow() method_id {
         .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
         .store_int(c, 16)
         .end_cell();
-      send_message(0xc4ff, 17, rsl_addr, 0x726568, lnow(), msg_body.begin_parse(), 1 << 30, 0);
+      send_message(0xc4ff, 17, rsl_addr, 0x726568, query_id, msg_body.begin_parse(), 1 << 30, 0);
     }
 
     cell msg_body = begin_cell()
       .store_uint(len, 32)
       .store_ref(dns_record)
       .end_cell();
-    return send_message(0x18, 6, s_addr, 0x726569, query_id, msg_body.begin_parse(), 0, 64);
+    ;;return send_message(0x18, 6, begin_cell().end_cell(), 0x726569, query_id, msg_body.begin_parse(), 0, 64);
+  
+    var msg = begin_cell()
+    .store_uint(0x30, 6)
+    .store_uint(0, 64 + 32 + 1 + 1)
+    .store_uint(query_id, 64)
+    .store_slice(msg_body.begin_parse());
+    send_raw_message(msg.end_cell(), 3);
+    ;;return send_message(0x18, 6, s_addr, 0x726569, query_id, msg_body.begin_parse(), 0, 64);
   }  
   return ();
 }
@@ -375,8 +396,4 @@ int lnow() method_id {
 
 int seqno() method_id {
   return get_data().begin_parse().preload_uint(32);
-}
-
-_ getinfo() method_id {
-  return load_short_data();
 }

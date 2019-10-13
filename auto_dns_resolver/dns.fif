@@ -6,15 +6,15 @@ PROGRAM{
   DECLPROC store_data
   DECLPROC store_short_data
   DECLPROC send_message
-  110403 DECLMETHOD get_payment_info
+  84671 DECLMETHOD getpayment
   67845 DECLMETHOD calc_cost
-  -7 DECLMETHOD dnsresolve
+  123660 DECLMETHOD dnsresolve
+  84387 DECLMETHOD getexpirationtime
   DECLPROC changerecord
   DECLPROC dnsregistrar
   DECLPROC recv_external
   DECLPROC recv_internal
   85143 DECLMETHOD seqno
-  79053 DECLMETHOD getinfo
   lnow PROC:<{
     1570558743 PUSHINT
   }>
@@ -92,7 +92,7 @@ PROGRAM{
     SWAP
     SENDRAWMSG
   }>
-  get_payment_info PROC:<{
+  getpayment PROC:<{
     load_data CALLDICT
     s6 POP
     s6 POP
@@ -116,8 +116,30 @@ PROGRAM{
     s1 s3 s0 XCHG3
   }>
   calc_cost PROC:<{
-    4 BLKDROP
-    2000 PUSHINT
+    s2 POP
+    getpayment CALLDICT
+    s3 POP
+    s7 PUSH
+    lnow CALLDICT
+    SUB
+    s5 PUSH
+    LESS
+    98 THROWIF
+    lnow CALLDICT
+    s1 s8 XCHG
+    SUB
+    s0 s4 XCHG2
+    SUB
+    s0 s3 XCHG2
+    MUL
+    ADD
+    s2 s4 XCHG2
+    MUL
+    s1 s3 XCHG
+    ADD
+    s0 s2 XCHG
+    MUL
+    ADD
   }>
   dnsresolve PROC:<{
     load_short_data CALLDICT
@@ -204,6 +226,31 @@ PROGRAM{
     5 BLKDROP
     0 PUSHINT
     NEWDICT
+  }>
+  getexpirationtime PROC:<{
+    DUP
+    0 PUSHINT
+    dnsresolve CALLDICT
+    s0 s2 XCHG
+    SBITS
+    SWAP
+    EQUAL
+    IFJMP:<{
+      0 PUSHINT
+      SWAP
+      16 PUSHINT
+      DICTIGETOPTREF
+      DUP
+      ISNULL
+      IFJMP:<{
+        DROP
+        -1 PUSHINT
+      }>
+      CTOS
+      32 PLDU
+    }>
+    DROP
+    -1 PUSHINT
   }>
   changerecord PROC:<{
     load_data CALLDICT
@@ -458,14 +505,15 @@ PROGRAM{
     3 RSHIFT#
     OVER
     SUB
-    s5 PUSH
-    ISNULL
-    0 NEQINT
+    s1 s(-1) PUXC
     AND
     IFJMP:<{
       s5 POP
       s5 POP
       s5 POP
+      OVER
+      ISNULL
+      97 THROWIF
       SWAP
       CTOS
       32 LDI
@@ -508,8 +556,7 @@ PROGRAM{
     s8 POP
     s2 PUSH
     ISNULL
-    0 NEQINT
-    IF:<{
+    IFNOT:<{
       0 PUSHINT
       s0 s3 XCHG2
       16 PUSHINT
@@ -623,12 +670,11 @@ PROGRAM{
       3 -ROLL
       changerecord CALLDICT
     }>
-    s4 POP
-    SWAP
+    s3 POP
+    s3 POP
     7497064 PUSHINT
     EQUAL
-    IFJMP:<{
-      s0 s2 XCHG
+    IF:<{
       16 LDI
       LDREF
       DROP
@@ -642,7 +688,7 @@ PROGRAM{
       SUB
       OVER
       ISNULL
-      0 NEQINT
+      0 EQINT
       AND
       IF:<{
         DUP
@@ -669,14 +715,13 @@ PROGRAM{
         50431 PUSHINT
         17 PUSHINT
         7497064 PUSHINT
-        lnow CALLDICT
-        s0 s4 XCHG
+        s0 s3 XCHG
         CTOS
         30 PUSHPOW2
-        s4 s6 XCHG
         s3 s5 XCHG
-        s4 s7 XCHG
-        s2 s3 XCHG
+        s2 s4 XCHG
+        s3 s6 XCHG
+        s8 s(-1) s(-1) PUXC2
         0 PUSHINT
         send_message CALLDICT
       }>ELSE<{
@@ -687,27 +732,26 @@ PROGRAM{
       32 STU
       STREF
       ENDC
-      24 PUSHINT
-      6 PUSHINT
-      7497065 PUSHINT
-      s0 s3 XCHG
-      CTOS
       0 PUSHINT
-      s3 s6 XCHG
-      s2 s5 XCHG
-      s2 s4 XCHG
-      s2 s3 XCHG
-      64 PUSHINT
-      send_message CALLDICT
+      48 PUSHINT
+      NEWC
+      6 STU
+      98 STU
+      s1 s2 XCHG
+      64 STU
+      SWAP
+      CTOS
+      STSLICER
+      ENDC
+      3 PUSHINT
+      SENDRAWMSG
+    }>ELSE<{
+      2DROP
     }>
-    3 BLKDROP
   }>
   seqno PROC:<{
     c4 PUSH
     CTOS
     32 PLDU
-  }>
-  getinfo PROC:<{
-    load_short_data CALLDICT
   }>
 }END>c
