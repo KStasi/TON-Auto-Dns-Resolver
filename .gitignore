@@ -1,3 +1,6 @@
 test/hello_world/node_modules/*
 ton
 smart_contracts_test
+DOCKER_ID
+.DS_Store
+*.swp

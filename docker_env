@@ -1,0 +1,6 @@
+
+export LITE_CLIENT_INFO_PATH="../smart_contracts_test/"
+export DNS_INFO_PATH="./dns_info"
+export LITE_CLIENT_INFO="hardscreen"
+export SCREEN_NAME="lite-client"
+export QUERY_PATH="../tests/"
