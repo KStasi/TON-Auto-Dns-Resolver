@@ -19,3 +19,7 @@ wget https://test.ton.org/ton-lite-client-test1.config.json
 echo '#!/bin/sh' > ./lite_client_start.sh
 echo './lite-client/lite-client -C ton-lite-client-test1.config.json' >> ./lite_client_start.sh
 chmod +x ./lite_client_start.sh
+
+echo "Please relogin"
+echo " OR run"
+echo "source ~/.bashrc"
