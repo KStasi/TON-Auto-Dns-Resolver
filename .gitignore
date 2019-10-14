@@ -5,3 +5,4 @@ docker_drop.sh
 docker_logs.sh
 docker_restart.sh
 docker_ssh.sh
+.DS_Store
