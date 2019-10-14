@@ -5,9 +5,8 @@ import sys
 
 SHOW_ADDR_SCRIPT = 'show-addr.fif'
 
-DNS_INFO = 'dns_info'
 LITE_CLIENT_INFO = 'hardscreen'
-DNS_INFO_PATH = './'
+DNS_INFO_PATH = './dns_info'
 LITE_CLIENT_INFO_PATH = '../smart_contracts_test/'
 QUERY_PATH = '../auto_dns_resolver/'
 
@@ -21,8 +20,8 @@ if (len(sys.argv) > 4):
 else:
     attached_boc = ''
 
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, wallet_name, DNS_INFO))
-with open(DNS_INFO_PATH + DNS_INFO) as f:
+os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, wallet_name, DNS_INFO_PATH))
+with open(DNS_INFO_PATH) as f:
     content = f.read()
     wallet_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
 
@@ -34,8 +33,8 @@ make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}"\n'.format(SCREEN_NAME, LITE_
 last = '"last\n"'
 
 # get dns address
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, dns_name, DNS_INFO))
-with open(DNS_INFO_PATH + DNS_INFO) as f:
+os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, dns_name, DNS_INFO_PATH))
+with open(DNS_INFO_PATH) as f:
     content = f.read()
     non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
     bounceable_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
