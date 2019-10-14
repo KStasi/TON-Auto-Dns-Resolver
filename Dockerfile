@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 WORKDIR /root
 
 RUN echo '14.10.2019' && apt-get update
