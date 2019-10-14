@@ -1,4 +1,5 @@
 #!/bin/bash
+cd ~
 apt-get update
 apt-get install make cmake gcc g++ libssl-dev screen zlib1g-dev python -y
 wget https://test.ton.org/ton-test-liteclient-full.tar.xz
