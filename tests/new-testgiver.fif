@@ -30,7 +30,7 @@ def? $2 { @' $2 } { "new-testgiver" } cond constant file-base
      GR$20 INT 3 INT RAWRESERVE   // reserve all but 20 Grams from the balance
      SWAP SENDRAWMSG
    }>
-   ENDS NEWC 32 STU ENDC c4 POPCTR      // store cnt''
+   ENDS INC INC NEWC 32 STU ENDC c4 POPCTR      // store cnt''
 }>c
 // code
 <b init_seqno 32 u, b> // data

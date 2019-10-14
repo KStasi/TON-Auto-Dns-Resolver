@@ -9,7 +9,7 @@
 $# 3 - -2 and ' usage if
 
 // "testgiver.addr" load-address 
--1 0xD3907C8819665C39424F97FBA35B15E03CADFD09759E0F048D2AF09526E1EA31
+-1 0x8174a6e0257df4d6d473d19d7019153691d3053aa9e2bb54d7395a7284659898
 2constant giver_addr
  ."Test giver address = " giver_addr 2dup .addr cr 6 .Addr cr
 

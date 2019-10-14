@@ -22,7 +22,8 @@ query_path = os.environ.get('QUERY_PATH')
 amount_to_send = sys.argv[1]
 dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
-if (len(sys.argv) > 4):
+script_name = sys.argv[4]
+if (len(sys.argv) > 5):
     attached_boc = '-B {}'.format(sys.argv[4])
 else:
     attached_boc = ''
@@ -30,7 +31,7 @@ else:
 # get dns address
 
 wallet_address = get_address(wallet_name, True)
-dns_address = get_address(dns_name, len(sys.argv) > 4)
+dns_address = get_address(dns_name, len(sys.argv) > 5)
 screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
 send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
@@ -49,12 +50,14 @@ with open(os.getcwd() +"/hardscreen") as c:
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
 
 # fund DNS
-os.system('fift -s wallet.fif {} {} {} {} {}'.format(wallet_name, dns_address, seqno, amount_to_send, attached_boc))
-os.system(send_query.format(query_path, 'wallet'))
+if 'testgiver.fif':
+    wallet_name = ''
+os.system('fift -s {}.fif {} {} {} {} {}'.format(script_name, wallet_name, dns_address, seqno, amount_to_send, attached_boc))
+os.system(send_query.format(query_path, script_name))
 time.sleep(5)
 
 # init DNS
-if (len(sys.argv) < 5):
+if (len(sys.argv) < 6):
     os.system(send_query.format(query_path, dns_name))
 
 
