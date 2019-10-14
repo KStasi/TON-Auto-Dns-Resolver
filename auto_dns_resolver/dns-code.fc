@@ -74,7 +74,7 @@ int lnow() method_id {
 (int, int, int, int, int, int) getpayment() method_id {
   var (seqno, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
   ;; prices are stored as a power of 2 as storage and probably computation optimization
-  return (std_time, 2 << std_payment, 2 << std_change_payment, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
+  return (std_time, 1 << std_payment, 1 << std_change_payment, 1 << ext_tm_payment, 1 << ext_bit_payment, 1 << ext_ref_payment);
 }
 
 ;; get method; returns price for registration subdomain with given params
@@ -110,14 +110,6 @@ int lnow() method_id {
     ;; in order not to return inactive records
     ;; but now() is expected to crushs during
     ;; local run
-
-    ;; cell tm_rcd = hshm.idict_get_ref(16, 0);
-    ;; if (tm_rcd.null?()) {
-    ;;   return (0, hshm);
-    ;; }
-    ;; slice stm_rcd = tm_rcd.begin_parse();
-    ;; int et = stm_rcd~preload_uint(32);
-    ;; throw_if(98, et < now());
 
     ;; the whole domain found
     if (left.slice_empty?()) {
@@ -214,7 +206,7 @@ int lnow() method_id {
     slice new_hshm = new_dns_record.begin_parse();
     (int cdn_bits, int cdn_refs) = new_hshm.slice_bits_refs();
     (int sdn_bits, int sdn_refs) = dns_record.begin_parse().slice_bits_refs();
-    int price = (cdn_bits - sdn_bits) * ext_bit_payment + (cdn_refs - sdn_refs) * ext_ref_payment + 2 << std_change_payment;
+    int price = (cdn_bits - sdn_bits) * ext_bit_payment + (cdn_refs - sdn_refs) * ext_ref_payment + 1 << std_change_payment;
 
     throw_unless(90, price < msg_value);
 
@@ -233,7 +225,7 @@ int lnow() method_id {
     int ext_et = in_msg.preload_uint(32);
 
     ;; check payment
-    int price = ext_et * ext_tm_payment + 2 << std_change_payment;
+    int price = ext_et * ext_tm_payment + 1 << std_change_payment;
 
     throw_unless(90, price < msg_value);
 

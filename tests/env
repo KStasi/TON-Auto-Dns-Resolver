@@ -1,11 +1,6 @@
-export SHOW_ADDR_SCRIPT_PATH="./show-addr.fif"
-export DNS_REGISTRAR_SCRIPT_PATH="../auto_dns_resolver/dns-registrar.fif"
 
 export LITE_CLIENT_INFO_PATH="../smart_contracts_test/"
-export AUTO_DNS_PATH="../auto_dns_resolver/"
-export SCRIPTS_PATH="../scripts/"
-
 export DNS_INFO_PATH="./dns_info"
 export LITE_CLIENT_INFO="hardscreen"
-export QUERY_PATH="../tests/"
 export SCREEN_NAME="iced"
+export QUERY_PATH="../tests/"
