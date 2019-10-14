@@ -7,6 +7,8 @@ dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
 expiration_time = sys.argv[4]
 
+print(str.encode(sys.argv[1]))
+
 show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
 dns_registrar_script = os.environ.get('DNS_REGISTRAR_SCRIPT_PATH')
 
