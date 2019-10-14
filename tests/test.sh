@@ -28,4 +28,6 @@ source ./env
 # python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-resolver-query.boc
 
 # crea
+python ${SCRIPTS_PATH}create-registrar.py $'\x76\x00\x99' dns2 secondary-wallet 160
+# python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-registrar-query.boc
 #python ${SCRIPTS_PATH}create-registrar.py 0.5 dns2 secondary-wallet 
