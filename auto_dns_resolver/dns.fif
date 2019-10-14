@@ -8,7 +8,7 @@ PROGRAM{
   DECLPROC send_message
   84671 DECLMETHOD getpayment
   67845 DECLMETHOD calc_cost
-  123660 DECLMETHOD dnsresolve
+  -7 DECLMETHOD dnsresolve
   84387 DECLMETHOD getexpirationtime
   DECLPROC changerecord
   DECLPROC dnsregistrar
@@ -119,23 +119,12 @@ PROGRAM{
     s2 POP
     getpayment CALLDICT
     s3 POP
-    s7 PUSH
-    NOW
-    SUB
-    s5 PUSH
-    LESS
-    98 THROWIF
-    NOW
-    s1 s8 XCHG
-    SUB
-    s0 s4 XCHG2
-    SUB
-    s0 s3 XCHG2
+    s4 POP
+    s1 s6 XCHG
     MUL
     ADD
-    s2 s4 XCHG2
+    -ROT
     MUL
-    s1 s3 XCHG
     ADD
     s0 s2 XCHG
     MUL
@@ -153,9 +142,16 @@ PROGRAM{
       0 PUSHINT
       SWAP
     }>
-    s2 PUSH
+    NEWC
+    s0 s3 XCHG2
+    STSLICER
+    8 PUSHINT
+    STZEROES
+    ENDC
+    CTOS
+    DUP
     SBITS
-    s3 s3 XCHG2
+    s0 s3 XCHG
     10 PUSHPOW2DEC
     PFXDICTGETQ
     NULLSWAPIFNOT
@@ -178,21 +174,12 @@ PROGRAM{
       DICTIGETOPTREF
       DUP
       ISNULL
+      NIP
       IFJMP:<{
-        s1 s5 XCHG
-        5 BLKDROP
+        s0 s4 XCHG
+        4 BLKDROP
         0 PUSHINT
         SWAP
-      }>
-      CTOS
-      32 LDU
-      DROP
-      NOW
-      LESS
-      IFJMP:<{
-        5 BLKDROP
-        0 PUSHINT
-        NEWDICT
       }>
       SWAP
       SEMPTY
@@ -233,6 +220,8 @@ PROGRAM{
     dnsresolve CALLDICT
     s0 s2 XCHG
     SBITS
+    8 ADDCONST
+    3 RSHIFT#
     SWAP
     EQUAL
     IFJMP:<{
@@ -263,6 +252,7 @@ PROGRAM{
     CTOS
     DUP
     SBITS
+    8 ADDCONST
     s0 s2 XCHG
     1 LDU
     s2 PUSH
@@ -396,7 +386,14 @@ PROGRAM{
       STDICT
       ENDC
       CTOS
-      s0 s8 s5 XCHG3
+      NEWC
+      s0 s9 XCHG2
+      STSLICER
+      8 PUSHINT
+      STZEROES
+      ENDC
+      CTOS
+      s8 s0 s5 XCHG3
       10 PUSHPOW2DEC
       PFXDICTREPLACE
       DROP
@@ -440,7 +437,14 @@ PROGRAM{
       STDICT
       ENDC
       CTOS
-      s0 s8 s5 XCHG3
+      NEWC
+      s0 s9 XCHG2
+      STSLICER
+      8 PUSHINT
+      STZEROES
+      ENDC
+      CTOS
+      s8 s0 s5 XCHG3
       10 PUSHPOW2DEC
       PFXDICTREPLACE
       DROP
@@ -451,30 +455,26 @@ PROGRAM{
     s0 s8 XCHG
     s4 s7 XCHG
     s6 s5 s0 XCHG3
-    s3 s4 XCHG
-    s0 s3 s3 XCHG3
+    s0 s4 s4 XCHG3
     store_data CALLDICT
   }>
   dnsregistrar PROC:<{
-    load_short_data CALLDICT
-    OVER
+    load_data CALLDICT
+    s7 PUSH
     ISNULL
     IF:<{
-      NIP
+      s7 POP
       NEWDICT
     }>ELSE<{
-      SWAP
+      s0 s7 XCHG
     }>
-    s0 s3 XCHG
+    s0 s9 XCHG
     LDREF
     SWAP
     CTOS
     DUP
-    SDCNTTRAIL0
-    8 LESSINT
-    92 THROWIF
-    DUP
     SBITS
+    8 ADDCONST
     s0 s2 XCHG
     LDDICT
     OVER
@@ -484,33 +484,28 @@ PROGRAM{
     32 LDU
     32 LDU
     DROP
-    2DUP
-    s4 s5 XCHG2
-    calc_cost CALLDICT
-    s0 s9 XCHG2
-    LESS
-    90 THROWIFNOT
-    s7 PUSH
-    NOW
-    GREATER
-    OVER
-    NOW
-    GREATER
-    OR
-    93 THROWIFNOT
-    s2 PUSH
+    s5 PUSH
     0 PUSHINT
     dnsresolve CALLDICT
-    s0 s5 XCHG
+    s0 s8 XCHG
     3 RSHIFT#
     OVER
     SUB
     s1 s(-1) PUXC
     AND
     IFJMP:<{
-      s5 POP
-      s5 POP
-      s5 POP
+      s3 POP
+      s3 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
+      s6 POP
       OVER
       ISNULL
       97 THROWIF
@@ -523,20 +518,19 @@ PROGRAM{
       256 LDSLICE
       DROP
       NEWC
-      s0 s3 XCHG
+      s0 s4 XCHG
       3 LSHIFT#
       s1 s2 XCHG
       SDSKIPFIRST
-      s1 s2 XCHG
+      s1 s3 XCHG
       STSLICER
       ENDC
       NEWC
       STREF
-      s1 s3 XCHG
+      s1 s4 XCHG
       STDICT
       s1 s3 XCHG
       32 STU
-      s1 s2 XCHG
       32 STU
       ENDC
       50431 PUSHINT
@@ -553,12 +547,12 @@ PROGRAM{
       send_message CALLDICT
     }>
     DROP
-    s8 POP
-    s2 PUSH
+    17 s() POP
+    s5 PUSH
     ISNULL
     IFNOT:<{
       0 PUSHINT
-      s0 s3 XCHG2
+      s0 s6 XCHG2
       16 PUSHINT
       DICTIGETOPTREF
       DUP
@@ -573,30 +567,47 @@ PROGRAM{
         DROP
       }>
     }>ELSE<{
-      s2 POP
+      s5 POP
     }>
+    s4 s(-1) s0 PUXC2
+    16 s() PUSH
+    -ROT
+    calc_cost CALLDICT
+    s0 s13 XCHG2
+    LESS
+    90 THROWIFNOT
+    s6 s1 PUXC
+    ADD
     NEWC
-    s1 s6 XCHG
     32 STU
-    s1 s6 XCHG
+    s1 s12 XCHG
     32 STU
     ENDC
     0 PUSHINT
-    s1 s0 s6 XCHG3
+    s1 s0 s11 XCHG3
     16 PUSHINT
     DICTISETREF
     NEWC
     STDICT
     ENDC
     CTOS
-    2SWAP
+    NEWC
+    s0 s11 XCHG2
+    STSLICER
+    8 PUSHINT
+    STZEROES
+    ENDC
+    CTOS
+    s10 s0 s8 XCHG3
     10 PUSHPOW2DEC
     PFXDICTSET
     DROP
-    SWAP
+    s0 s5 XCHG
     INC
-    s0 s2 XCHG
-    store_short_data CALLDICT
+    s0 s8 XCHG
+    s5 s7 XCHG
+    3 4 BLKSWAP
+    store_data CALLDICT
   }>
   recv_external PROC:<{
     9 PUSHPOW2
