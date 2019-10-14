@@ -4,9 +4,8 @@ import time
 import sys
 
 def get_address(file_base, is_bounceable):
-    dns_info_path = os.environ.get('DNS_INFO_PATH')
-    os.system('fift -s show-addr.fif {}> {}\n'.format(file_base, dns_info_path))
-    with open(dns_info_path) as f:
+    os.system('fift -s show-addr.fif {} > "dns_info"\n'.format(file_base))
+    with open("dns_info") as f:
         content = f.read()
         non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
         bounceable_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
