@@ -7,8 +7,6 @@ dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
 expiration_time = sys.argv[4]
 
-print(str.encode(sys.argv[1]))
-
 show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
 dns_registrar_script = os.environ.get('DNS_REGISTRAR_SCRIPT_PATH')
 
@@ -24,7 +22,8 @@ def get_address(file_base):
 wallet_address = get_address(wallet_name)
 dns_address = get_address(dns_name)
 
-os.system('fift -s {} {} {} {} {}\n'.format(dns_registrar_script, dn, dns_address, wallet_address, expiration_time))
+# fu..antastic magic with int added to be able code domain names with \x00
+os.system('fift -s {} {} {} {} {} {}\n'.format(dns_registrar_script, (len(dn) / 2 - 1) * 8, int(dn, 16), dns_address, wallet_address, expiration_time))
 
 
 
