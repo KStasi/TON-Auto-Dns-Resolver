@@ -38,3 +38,8 @@ source ./env
 # results are send to "nowhere" but search will trigger both dns 
 # fift -s ${AUTO_DNS_PATH}dns-resolver.fif 72 0x737461727400656E64 0
 # python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-resolver-query.boc
+
+# change record
+# note: it would be better to store current dns record info before continue
+# to check that it is really changed
+# python ${SCRIPTS_PATH}create-registrar.py 0x7374617274 dns2 secondary-wallet 160 
