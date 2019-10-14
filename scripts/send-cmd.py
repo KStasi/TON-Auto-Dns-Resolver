@@ -3,15 +3,25 @@ import re
 import time
 import sys
 
-SHOW_ADDR_SCRIPT = 'show-addr.fif'
+def get_address(file_base, is_bounceable):
+    dns_info_path = os.environ.get('DNS_INFO_PATH')
+    os.system('fift -s {} {}> {}\n'.format(show_addr_script_path, file_base, dns_info_path))
+    with open(dns_info_path) as f:
+        content = f.read()
+        non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
+        bounceable_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
+        if (is_bounceable):
+            return bounceable_address
+        else:
+            return non_bounceable_address
 
-LITE_CLIENT_INFO = 'hardscreen'
-DNS_INFO_PATH = './dns_info'
-LITE_CLIENT_INFO_PATH = '../smart_contracts_test/'
-QUERY_PATH = '../auto_dns_resolver/'
+# export neccessary env variables
+show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
+screen_name = os.environ.get('SCREEN_NAME')
+lite_client_info_path = os.environ.get('LITE_CLIENT_INFO_PATH')
+query_path = os.environ.get('QUERY_PATH')
 
-SCREEN_NAME = 'iced'
-
+# export args
 amount_to_send = sys.argv[1]
 dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
@@ -20,28 +30,17 @@ if (len(sys.argv) > 4):
 else:
     attached_boc = ''
 
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, wallet_name, DNS_INFO_PATH))
-with open(DNS_INFO_PATH) as f:
-    content = f.read()
-    wallet_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
+# get dns address
 
-screen_cmd = 'screen -S {} -p 0 -X stuff '.format(SCREEN_NAME)
+wallet_address = get_address(wallet_name, True)
+dns_address = get_address(dns_name, len(sys.argv) > 4)
+
+
+screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
 send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
-make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}"\n'.format(SCREEN_NAME, LITE_CLIENT_INFO)
-
+make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}"\n'.format(screen_name, lite_client_info_path)
 last = '"last\n"'
-
-# get dns address
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, dns_name, DNS_INFO_PATH))
-with open(DNS_INFO_PATH) as f:
-    content = f.read()
-    non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
-    bounceable_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
-    if (len(sys.argv) > 4):
-        dns_address = bounceable_address
-    else:
-        dns_address = non_bounceable_address
 
 # get wallet seqno
 os.system(screen_cmd + last)
@@ -50,17 +49,17 @@ os.system(screen_cmd + get_seqno_cmd)
 time.sleep(1)   
 os.system(make_hardcopy)
 time.sleep(1)   
-with open(LITE_CLIENT_INFO_PATH + LITE_CLIENT_INFO) as c:
+with open(lite_client_info_path) as c:
     content = c.read()
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
 
 # fund DNS
 os.system('fift -s wallet.fif {} {} {} {} {}'.format(wallet_name, dns_address, seqno, amount_to_send, attached_boc))
-os.system(send_query.format(QUERY_PATH, 'wallet'))
+os.system(send_query.format(query_path, 'wallet'))
 time.sleep(5)
 
 # init DNS
 if (len(sys.argv) < 5):
-    os.system(send_query.format(QUERY_PATH, dns_name))
+    os.system(send_query.format(query_path, dns_name))
 
 
