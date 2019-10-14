@@ -1,28 +1,28 @@
 import os
 import re
-import time
 import sys
-
-SHOW_ADDR_SCRIPT = 'show-addr.fif'
-DNS_REGISTRAR_SCRIPT = 'dns-registrar.fif'
-DNS_INFO_PATH = './dns_info'
 
 dn = sys.argv[1]
 dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
 expiration_time = sys.argv[4]
 
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, wallet_name, DNS_INFO_PATH))
-with open(DNS_INFO_PATH) as f:
-    content = f.read()
-    wallet_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
+show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
+dns_registrar_script = os.environ.get('DNS_REGISTRAR_SCRIPT_PATH')
 
-os.system('fift -s {} {}> {}\n'.format(SHOW_ADDR_SCRIPT, dns_name, DNS_INFO_PATH))
-with open(DNS_INFO_PATH) as f:
-    content = f.read()
-    dns_address = re.search('Bounceable address \(for later access\): (.+)', content).group(1)
+def get_address(file_base):
+    dns_info_path = os.environ.get('DNS_INFO_PATH')
+    os.system('fift -s {} {}> {}\n'.format(show_addr_script_path, file_base, dns_info_path))
+    with open(dns_info_path) as f:
+        content = f.read()
+        return re.search('Bounceable address \(for later access\): (.+)', content).group(1)
 
-os.system('fift -s {} {} {} {} {}\n'.format(DNS_REGISTRAR_SCRIPT, dn, dns_address, wallet_address, expiration_time))
+
+
+wallet_address = get_address(wallet_name)
+dns_address = get_address(dns_name)
+
+os.system('fift -s {} {} {} {} {}\n'.format(dns_registrar_script, dn, dns_address, wallet_address, expiration_time))
 
 
 

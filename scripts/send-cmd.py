@@ -18,7 +18,7 @@ def get_address(file_base, is_bounceable):
 # export neccessary env variables
 show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
 screen_name = os.environ.get('SCREEN_NAME')
-lite_client_info_path = os.environ.get('LITE_CLIENT_INFO_PATH')
+lite_client_info= os.environ.get('LITE_CLIENT_INFO')
 query_path = os.environ.get('QUERY_PATH')
 
 # export args
@@ -26,7 +26,7 @@ amount_to_send = sys.argv[1]
 dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
 if (len(sys.argv) > 4):
-    attached_boc = '-B {}'.format(sys.argv[5])
+    attached_boc = '-B {}'.format(sys.argv[4])
 else:
     attached_boc = ''
 
@@ -34,12 +34,10 @@ else:
 
 wallet_address = get_address(wallet_name, True)
 dns_address = get_address(dns_name, len(sys.argv) > 4)
-
-
 screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
 send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
-make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}"\n'.format(screen_name, lite_client_info_path)
+make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}/{}"\n'.format(screen_name, os.getcwd(), lite_client_info)
 last = '"last\n"'
 
 # get wallet seqno
@@ -49,7 +47,7 @@ os.system(screen_cmd + get_seqno_cmd)
 time.sleep(1)   
 os.system(make_hardcopy)
 time.sleep(1)   
-with open(lite_client_info_path) as c:
+with open(os.getcwd() +"/"+ lite_client_info) as c:
     content = c.read()
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
 
