@@ -5,20 +5,21 @@
   ."Creates the message body to be sent from a wallet to change existed record of subdomain." cr
   ."The result is saved into <savefile> (`dns-changerecord-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to DNS smart contract, along with a small value (say, one Gram) to cover forwarding and processing fees" cr 1 halt
 } : usage
-$# dup 5 < swap 6 > or ' usage if
+$# dup 3 < swap 4 > or ' usage if
 true constant bounce
 
-$1 =: dn    
-$2 parse-int =: c  
-$3 parse-int =: mn    
-$4 bounce parse-load-address =: bounce 2=: i    
-$5 bounce parse-load-address =: bounce 2=: ow      
-def? $6 { @' $6 } { "dns-changerecord-query.boc" } cond constant output_fname
+$1 =: dn      
+$2 bounce parse-load-address =: bounce 2=: i    
+$3 bounce parse-load-address =: bounce 2=: ow      
+def? $4 { @' $6 } { "dns-changerecord-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-changerecord message is set to " query_id . cr
-<b i addr, ow addr, b> 
+<b i addr, b> 
 <b swap ref, b>
-<s c dictnew 16 idict! drop
+<s -1 dictnew 16 idict! drop 
+<b ow addr, b> 
+<b swap ref, b>
+<s -2 rot 16 idict! drop 
 <b dn $, b>
 <b 0x726570 32 u, query_id 64 u, 1 roll ref, 0 1 u, 1 roll dict, b>
 cr ."Message body is " dup <s csr. cr

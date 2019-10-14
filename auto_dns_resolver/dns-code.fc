@@ -78,7 +78,7 @@ int lnow() method_id {
 }
 
 ;; get method; returns price for registration subdomain with given params
-(int) calc_cost(int et, int ct, int cdn_bits, int cdn_refs) method_id {
+(int) calc_cost(int et, int cdn_bits, int cdn_refs) method_id {
   ;; std_payment + payment_for_seconds + payment_for_bits + payment_for_refs
   ;; caching time has no effect
   (int std_time, int std_payment, int std_change_payment, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) = getpayment();
@@ -130,6 +130,9 @@ int lnow() method_id {
 
       ;; look up special one
       cell dns_record = hshm.idict_get_ref(16, c);
+      if (dns_record.null?()) {
+        return (0, dns_record);
+      }
       return (dn_len / 8, dns_record);
     }
 
@@ -216,11 +219,11 @@ int lnow() method_id {
     throw_unless(90, price < msg_value);
 
     ;; restore time; it remains the same
-    cell tm_rcd = dns_record.idict_get_ref(16, 0);
+    cell tm_rcd = dns_record.idict_get_ref(16, -3);
   
     throw_if(91, tm_rcd.null?());
 
-    new_dns_record~idict_set_ref(16, 0, tm_rcd);
+    new_dns_record~idict_set_ref(16, -3, tm_rcd);
 
     ;; update record
     slice new_dns_value = begin_cell().store_dict(new_dns_record).end_cell().begin_parse();
@@ -235,15 +238,15 @@ int lnow() method_id {
     throw_unless(90, price < msg_value);
 
     ;; restore previous time
-    cell tm_rcd = dns_record.idict_get_ref(16, 0);
+    cell tm_rcd = dns_record.idict_get_ref(16, -3);
   
     throw_if(91, tm_rcd.null?());
 
     slice stm_rcd = tm_rcd.begin_parse();
-    (int et, int ct) = (stm_rcd~load_uint(32), stm_rcd.preload_uint(32));
+    int et = stm_rcd.preload_uint(32);
 
     ;; update record
-    dns_record~idict_set_ref(16, 0, begin_cell().store_uint(et + ext_et, 32).store_uint(ct, 32).end_cell());
+    dns_record~idict_set_ref(16, 0, begin_cell().store_uint(et + ext_et, 32).end_cell());
 
     slice new_dns_value = begin_cell().store_dict(dns_record).end_cell().begin_parse();
     dnst~prxdict_replace(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), new_dns_value);
@@ -266,10 +269,9 @@ int lnow() method_id {
   ;; extract data
   cell dns_value = in_msg~load_dict();
   int et = in_msg~load_uint(32);
-  int ct = in_msg.preload_uint(32);
 
   ;; check whether it is current contract responsibility
-  (int len, cell dns_record) = dnsresolve(dn, 0);
+  (int len, cell dns_record) = dnsresolve(dn, -3);
  
   ;; otherwise try to resend request
   if (len & (dn_len / 8 - len) ) {
@@ -284,7 +286,6 @@ int lnow() method_id {
       .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
       .store_dict(dns_value)
       .store_uint(et, 32)
-      .store_uint(ct, 32)
       .end_cell();
     ;; carry all remaining msg_value
     return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
@@ -292,25 +293,20 @@ int lnow() method_id {
 
   ;; check if record exist
   ifnot (dns_record.null?()) {
-    ;; restore time
-    cell tm_rcd = dns_record.idict_get_ref(16, 0);
-
     ;; check expiration time
-    ifnot (tm_rcd.null?()) {
-      int fet = tm_rcd.begin_parse().preload_uint(32);
-      throw_if(97, fet > now());
-    }
+    int fet = dns_record.begin_parse().preload_uint(32);
+    throw_if(97, fet > now());
   }
 
   ;; check price
   slice hshm = dns_value.begin_parse();
   (int cdn_bits, int cdn_refs) = hshm.slice_bits_refs();
-  (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
+  (int price) = calc_cost(et, cdn_bits, cdn_refs);
 
   throw_unless(90, price < msg_value);
   
   ;; update dns record
-  dns_value~idict_set_ref(16, 0, begin_cell().store_uint(std_time + et, 32).store_uint(ct, 32).end_cell());
+  dns_value~idict_set_ref(16, -3, begin_cell().store_uint(std_time + et, 32).end_cell());
   slice dn_value = begin_cell().store_dict(dns_value).end_cell().begin_parse();
   dnst~prxdict_set(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), dn_value);
   store_data(stored_seqno + 1, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment);
@@ -366,10 +362,10 @@ int lnow() method_id {
     (int len, cell dns_record) = dnsresolve(dn, c);
 
     ;; continue recursively if need
-    int left = dn.slice_bits() - len * 8;
+    int left = dn.slice_bits() + 8 - len * 8;
     if (left & (dns_record.null?() == 0)) {
       slice rsl = dns_record.begin_parse();
-      (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
+      (int wc, slice rsl_addr) = (rsl~load_int(8), rsl~load_bits(256));
   
       cell msg_body = begin_cell()
         .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
@@ -400,14 +396,10 @@ int seqno() method_id {
 }
 
 (int) getexpirationtime(slice dn) method_id {
-  (int len, cell dns_record) = dnsresolve(dn, 0);
+  (int len, cell dns_record) = dnsresolve(dn, -3);
   int dn_len = dn.slice_bits() + 8;
   if (dn_len / 8 == len) {
-    cell tm_rcd = dns_record.idict_get_ref(16, 0);
-    if (tm_rcd.null?()) {
-      return (-1);
-    }
-    return (tm_rcd.begin_parse().preload_uint(32));    
+    return (dns_record.begin_parse().preload_uint(32));    
   }
   return (-1);
 }

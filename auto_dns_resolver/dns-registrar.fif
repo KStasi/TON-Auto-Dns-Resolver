@@ -5,26 +5,25 @@
   ."Creates the message body to be sent from a wallet to registr new subdomain." cr
   ."The result is saved into <savefile> (`dns-registrar-query.boc` by default) and output in hexadecimal form, to be sent later as the body of a message from the wallet to DNS contract, along with a appropriate value to satisfy payment and cover fees" cr 1 halt
 } : usage
-$# dup 7 < swap 8 > or ' usage if
+$# dup 4 < swap 5 > or ' usage if
 true constant bounce
 
-$1 =: dn    
-$2 parse-int =: c  
-$3 parse-int =: mn    
-$4 bounce parse-load-address =: bounce 2=: i    
-$5 bounce parse-load-address =: bounce 2=: ow    
-$6 (number) 1 <> { 0 } if dup 0<= abort"<expirational-utime> must be a positive integer"
-constant et    
-$7 (number) 1 <> { 0 } if dup 0<= abort"<caching-utime> must be a positive integer"
-constant ct    
-def? $8 { @' $8 } { "dns-registrar-query.boc" } cond constant output_fname
+$1 =: dn
+$2 bounce parse-load-address =: bounce 2=: i    
+$3 bounce parse-load-address =: bounce 2=: ow    
+$4 (number) 1 <> { 0 } if dup 0<= abort"<expirational-utime> must be a positive integer"
+constant et 
+def? $5 { @' $5 } { "dns-registrar-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-registrar message is set to " query_id . cr
-<b i addr, ow addr, b> 
+<b i addr, b> 
 <b swap ref, b>
-<s c dictnew 16 idict! drop
+<s -1 dictnew 16 idict! drop 
+<b ow addr, b> 
+<b swap ref, b>
+<s -2 rot 16 idict! drop 
 <b dn $, b>
-<b 0x726567 32 u, query_id 64 u, 1 roll ref, 1 roll dict, et 32 u, ct 32 u, b>
+<b 0x726567 32 u, query_id 64 u, 1 roll ref, 1 roll dict, et 32 u, b>
 cr ."Message body is " dup <s csr. cr
 
 2 boc+>B output_fname tuck B>file ."Saved to file " type cr
