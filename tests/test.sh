@@ -44,3 +44,9 @@ python ../scripts/send-cmd.py 1.5 dns1 main-wallet dns-resolver-query.boc
 # to check that it is really changed
 python ../scripts/create-request.py changerecord 0x7374617274 dns2 secondary-wallet 
 python ../scripts/send-cmd.py 1.5 dns1 main-wallet dns-changerecord-query.boc
+
+# change expiration time
+# note: it would be better to store current dns record info before continue
+# to check that it is really changed
+python ../scripts/create-request.py changetime 0x7374617274 200
+python ../scripts/send-cmd.py 1.5 dns1 secondary-wallet dns-changeretime-query.boc
