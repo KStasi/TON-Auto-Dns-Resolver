@@ -4,7 +4,7 @@ import time
 import sys
 
 def get_address(file_base, is_bounceable):
-    os.system('fift -s show-addr.fif {} > "dns_info"\n'.format(file_base))
+    os.system('fift -s show-addr.fif {}> "dns_info"\n'.format(file_base))
     with open("dns_info") as f:
         content = f.read()
         non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
@@ -34,7 +34,7 @@ wallet_address = get_address(wallet_name, True)
 dns_address = get_address(dns_name, len(sys.argv) > 4)
 screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
-send_query = screen_cmd +'"sendfile ../tests/{}-query.boc\n"'
+send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
 make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}/{}"\n'.format(screen_name, os.getcwd(), lite_client_info)
 last = '"last\n"'
 
@@ -51,11 +51,11 @@ with open(os.getcwd() +"/"+ lite_client_info) as c:
 
 # fund DNS
 os.system('fift -s wallet.fif {} {} {} {} {}'.format(wallet_name, dns_address, seqno, amount_to_send, attached_boc))
-os.system(send_query.format('wallet'))
+os.system(send_query.format(query_path, 'wallet'))
 time.sleep(5)
 
 # init DNS
 if (len(sys.argv) < 5):
-    os.system(send_query.format(dns_name))
+    os.system(send_query.format(query_path, dns_name))
 
 
