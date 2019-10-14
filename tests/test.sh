@@ -25,11 +25,16 @@ source ./env
 # check manually dns resolver in the lite client & time expiration
 # also try send massage to trigger dns resolver
 # results are send to "nowhere"
-# fift -s ${AUTO_DNS_PATH}dns-resolver.fif "start" -1
+# fift -s ${AUTO_DNS_PATH}dns-resolver.fif 40 0x7374617274 -1
 # python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-resolver-query.boc
 
 # register two-level domain name ("start\0end\0")
 # python ${SCRIPTS_PATH}create-registrar.py 0x737461727400656E64 dns1 main-wallet 160
 # python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-registrar-query.boc
 
-# check if 0x656E64 ("end") registred on dns2
+# check if two-level domain name ("start\0end\0") can be resolved & 
+# 0x656E64 ("end") was registred on dns2 mannually
+# also try send massage to trigger dns resolver
+# results are send to "nowhere" but search will trigger both dns 
+# fift -s ${AUTO_DNS_PATH}dns-resolver.fif 72 0x737461727400656E64 0
+# python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-resolver-query.boc
