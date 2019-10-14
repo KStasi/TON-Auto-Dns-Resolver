@@ -5,7 +5,7 @@ import sys
 
 def get_address(file_base, is_bounceable):
     dns_info_path = os.environ.get('DNS_INFO_PATH')
-    os.system('fift -s {} {}> {}\n'.format(show_addr_script_path, file_base, dns_info_path))
+    os.system('fift -s show-addr.fif {}> {}\n'.format(file_base, dns_info_path))
     with open(dns_info_path) as f:
         content = f.read()
         non_bounceable_address = re.search('Non-bounceable address \(for init only\): (.+)', content).group(1)
@@ -16,7 +16,6 @@ def get_address(file_base, is_bounceable):
             return non_bounceable_address
 
 # export neccessary env variables
-show_addr_script_path = os.environ.get('SHOW_ADDR_SCRIPT_PATH')
 screen_name = os.environ.get('SCREEN_NAME')
 lite_client_info= os.environ.get('LITE_CLIENT_INFO')
 query_path = os.environ.get('QUERY_PATH')
@@ -36,7 +35,7 @@ wallet_address = get_address(wallet_name, True)
 dns_address = get_address(dns_name, len(sys.argv) > 4)
 screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
-send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
+send_query = screen_cmd +'"sendfile ../tests/{}-query.boc\n"'
 make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}/{}"\n'.format(screen_name, os.getcwd(), lite_client_info)
 last = '"last\n"'
 
@@ -53,11 +52,11 @@ with open(os.getcwd() +"/"+ lite_client_info) as c:
 
 # fund DNS
 os.system('fift -s wallet.fif {} {} {} {} {}'.format(wallet_name, dns_address, seqno, amount_to_send, attached_boc))
-os.system(send_query.format(query_path, 'wallet'))
+os.system(send_query.format('wallet'))
 time.sleep(5)
 
 # init DNS
 if (len(sys.argv) < 5):
-    os.system(send_query.format(query_path, dns_name))
+    os.system(send_query.format(dns_name))
 
 
