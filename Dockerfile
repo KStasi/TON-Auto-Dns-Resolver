@@ -29,6 +29,7 @@ RUN cd ~/liteclient-build && \
 RUN mkdir dich4
 
 COPY . /root/dich4
+COPY docker_env /root/dich4/tests/env
 
 CMD cd ~/liteclient-build && \
   screen -mS lite-client ./lite_client_start.sh

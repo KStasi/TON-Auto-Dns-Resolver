@@ -1,8 +1,6 @@
 test/hello_world/node_modules/*
 ton
 smart_contracts_test
-docker_drop.sh
-docker_logs.sh
-docker_restart.sh
-docker_ssh.sh
+DOCKER_ID
 .DS_Store
+*.swp
