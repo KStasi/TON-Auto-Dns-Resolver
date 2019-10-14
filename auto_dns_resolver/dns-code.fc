@@ -36,7 +36,7 @@ int lnow() method_id {
   set_data(begin_cell()
     .store_uint(seqno, 32)
     .store_dict(dnst)
-    .store_uint(pk, 256)
+    .store_uint(pk, 256) ;; probably should store "rare" data in ref
     .store_uint(std_time, 32)
     .store_uint(std_payment, 6)
     .store_uint(std_change_payment, 6)
@@ -55,7 +55,7 @@ int lnow() method_id {
   .end_cell());
 }
 
-;; send answer for debug 
+;; send internal answer 
 () send_message(int type, int type_len, slice addr, int op, int query_id, slice msg_body, int grams, int mode) impure {
   var msg = begin_cell()
     .store_uint(type, type_len)
@@ -70,29 +70,34 @@ int lnow() method_id {
   send_raw_message(msg.end_cell(), mode);
 }
 
+;; get method; returns prices & standart time
 (int, int, int, int, int, int) getpayment() method_id {
   var (seqno, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
+  ;; prices are stored as a power of 2 as storage and probably computation optimization
   return (std_time, 2 << std_payment, 2 << std_change_payment, 2 << ext_tm_payment, 2 << ext_bit_payment, 2 << ext_ref_payment);
 }
 
+;; get method; returns price for registration subdomain with given params
 (int) calc_cost(int et, int ct, int cdn_bits, int cdn_refs) method_id {
-  ;; std_payment + payment_per_seconds + payment_per_bit + payment_per_ref
+  ;; std_payment + payment_for_seconds + payment_for_bits + payment_for_refs
   ;; caching time has no effect
   (int std_time, int std_payment, int std_change_payment, int ext_tm_payment, int ext_bit_payment, int ext_ref_payment) = getpayment();
   return (std_payment + et * ext_tm_payment + cdn_bits * ext_bit_payment + cdn_refs * ext_ref_payment);
-  ;;return (1500 + et + cdn_bits + cdn_refs * 4);
 }
 
-(int, cell) dnsresolve(slice dn, int c)  impure  method_id(-7) {
+;; look up dns record by domain name
+(int, cell) dnsresolve(slice dn, int c) impure method_id(-7) {
+  ;; extarct data
   (int stored_seqno, cell dnst, slice other) = load_short_data();
 
   if (dnst.null?()) {
     return (0, dnst);
   }
 
+  ;; pad with zeros 
   slice dn = begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse();
 
-  int dn_len = dn.slice_bits();
+  ;; search in trie; the longest match returns 
   var (prx, val, left, f) = dnst.prxdict_getq(1023, dn);
   if (f) {
     ;; substract hashmap
@@ -101,45 +106,46 @@ int lnow() method_id {
       return (0, hshm);
     }
 
-    ;; check time
-    cell tm_rcd = hshm.idict_get_ref(16, 0);
-  
-    if (tm_rcd.null?()) {
-      return (0, hshm);
-    }
-    slice stm_rcd = tm_rcd.begin_parse();
-    (int et, int ct) = (stm_rcd~load_uint(32), stm_rcd~load_uint(32));
+    ;; we considered checking expiration time
+    ;; in order not to return inactive records
+    ;; but now() is expected to crushs during
+    ;; local run
+
+    ;; cell tm_rcd = hshm.idict_get_ref(16, 0);
+    ;; if (tm_rcd.null?()) {
+    ;;   return (0, hshm);
+    ;; }
+    ;; slice stm_rcd = tm_rcd.begin_parse();
+    ;; int et = stm_rcd~preload_uint(32);
+    ;; throw_if(98, et < now());
 
     ;; the whole domain found
     if (left.slice_empty?()) {
+      int dn_len = dn.slice_bits();
+
+      ;; return all categories
       if (c == 0) {
         return (dn_len / 8, hshm);
       }
+
+      ;; look up special one
       cell dns_record = hshm.idict_get_ref(16, c);
       return (dn_len / 8, dns_record);
     }
 
     ;; try to find next dns resolver
-    cell nxt_rsl = hshm.idict_get_ref(16, -1);
-    return (prx.slice_bits() / 8, nxt_rsl);
+    cell rsl_rcd = hshm.idict_get_ref(16, -1);
+    if (rsl_rcd.null?()) {
+      return (0, rsl_rcd);
+    }
+    return (prx.slice_bits() / 8, rsl_rcd);
   }
   return (0,  new_dict()); 
 }
 
-(int) getexpirationtime(slice dn) method_id {
-  (int len, cell dns_record) = dnsresolve(dn, 0);
-  int dn_len = dn.slice_bits() + 8;
-  if (dn_len / 8 == len) {
-    cell tm_rcd = dns_record.idict_get_ref(16, 0);
-    if (tm_rcd.null?()) {
-      return (-1);
-    }
-    return (tm_rcd.begin_parse().preload_uint(32));    
-  }
-  return (-1);
-}
-
+;; change dns record | expand expiration time (only for record's owner)
 () changerecord(int query_id, int msg_value, slice s_addr, slice in_msg) impure {
+  ;; extarct data
   var (stored_seqno, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
 
   throw_if(95, dnst.null?());
@@ -147,115 +153,120 @@ int lnow() method_id {
   ;; get domain name
   cell cdn = in_msg~load_ref();
   slice dn = cdn.begin_parse();
+
+  ;; reserve byte for zero
   int dn_len = dn.slice_bits() + 8;
 
-  ;; get new data
+  ;; get mode
+  ;; 0 - change dns record
+  ;; 1 - expand expiration time
   int mode = in_msg~load_uint(1);
 
   (int len, cell dns_record) = dnsresolve(dn, 0);
   int left = dn_len - len * 8;
   
-  ;; check if record with owner exists
+  ;; check if record exists
   throw_if(95, dns_record.null?());
 
-  ;; otherwise try to resend request
+  ;; if subdomain of higher level try to resend request
   if (left) {
-    ;; look for methods
+    ;; look for resolver address
     slice rsl = dns_record.begin_parse();
-    (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
+    (int wc, slice rsl_addr) = (rsl~load_int(8), rsl.preload_bits(256));
+
     ;; create msg
     builder msg_body = begin_cell()
       .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
       .store_uint(mode, 1);
       
     ifnot (mode) {
-      cell cdn_value = in_msg~load_dict();
-      msg_body = msg_body.store_dict(cdn_value);
+      cell dns_value = in_msg~load_dict();
+      msg_body = msg_body.store_dict(dns_value);
     } else {
       int ext_et = in_msg~load_uint(32);
       msg_body = msg_body.store_uint(ext_et, 32);
     };
+
+    ;; carry all remaining msg_value
     return send_message(0xc4ff, 17, rsl_addr, 0x726570, query_id, msg_body.end_cell().begin_parse(), 0, 64);  
   }
 
   ;; try to find owner
-  cell nxt_rsl = dns_record.idict_get_ref(16, -2);
+  cell cown_rcd = dns_record.idict_get_ref(16, -2);
 
-  throw_if(96, nxt_rsl.null?());
+  throw_if(96, cown_rcd.null?());
 
   ;; auth
-  slice rsl = nxt_rsl.begin_parse();
-  (int mn, int wc, int rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_uint(256));
+  slice own = cown_rcd.begin_parse();
+  (int wc, int own_addr) = (own~load_int(8), own.preload_uint(256));
   var (src_wc, src_addr) = parse_std_addr(s_addr);
-  throw_unless(94, rsl_addr == src_addr);
+  throw_unless(94, own_addr == src_addr);
 
-  ;; check if valid
+  ;; change based on option
   ifnot(mode) {
-    cell cdn_value = in_msg~load_dict();
-    slice new_hshm = cdn_value.begin_parse();
+    ;; extract new dns record value
+    cell new_dns_record = in_msg.preload_dict();
+
+    ;; calculate change price
+    slice new_hshm = new_dns_record.begin_parse();
     (int cdn_bits, int cdn_refs) = new_hshm.slice_bits_refs();
     (int sdn_bits, int sdn_refs) = dns_record.begin_parse().slice_bits_refs();
-
-    ;; check payment
     int price = (cdn_bits - sdn_bits) * ext_bit_payment + (cdn_refs - sdn_refs) * ext_ref_payment + 2 << std_change_payment;
 
     throw_unless(90, price < msg_value);
 
-    ;; restore time
+    ;; restore time; it remains the same
     cell tm_rcd = dns_record.idict_get_ref(16, 0);
   
     throw_if(91, tm_rcd.null?());
 
-    cdn_value~idict_set_ref(16, 0, tm_rcd);
+    new_dns_record~idict_set_ref(16, 0, tm_rcd);
 
-    ;; prepare modified record
-    slice dn_value = begin_cell().store_dict(cdn_value).end_cell().begin_parse();
-    dnst~prxdict_replace(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), dn_value);
+    ;; update record
+    slice new_dns_value = begin_cell().store_dict(new_dns_record).end_cell().begin_parse();
+    dnst~prxdict_replace(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), new_dns_value);
   } else {
-    int ext_et = in_msg~load_uint(32);
+    ;; extract time amount to expand
+    int ext_et = in_msg.preload_uint(32);
 
     ;; check payment
     int price = ext_et * ext_tm_payment + 2 << std_change_payment;
 
     throw_unless(90, price < msg_value);
 
-    ;; restore time
+    ;; restore previous time
     cell tm_rcd = dns_record.idict_get_ref(16, 0);
   
     throw_if(91, tm_rcd.null?());
 
     slice stm_rcd = tm_rcd.begin_parse();
-    (int et, int ct) = (stm_rcd~load_uint(32), stm_rcd~load_uint(32));
+    (int et, int ct) = (stm_rcd~load_uint(32), stm_rcd.preload_uint(32));
+
+    ;; update record
     dns_record~idict_set_ref(16, 0, begin_cell().store_uint(et + ext_et, 32).store_uint(ct, 32).end_cell());
 
-    slice dn_value = begin_cell().store_dict(dns_record).end_cell().begin_parse();
-    dnst~prxdict_replace(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), dn_value);
+    slice new_dns_value = begin_cell().store_dict(dns_record).end_cell().begin_parse();
+    dnst~prxdict_replace(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), new_dns_value);
   }
     store_data(stored_seqno + 1, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment);
 }
 
+;; registr new subdomain
 () dnsregistrar(int query_id, int msg_value, slice in_msg) impure {
   ;; extract data
   var (stored_seqno, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment) = load_data();
     
-  ;; if no table exist, create
-  if (dnst.null?()) {
-    dnst = new_dict();
-  }
-
   ;; get domain name
   cell cdn = in_msg~load_ref();
   slice dn = cdn.begin_parse();
 
-  ;; add zero terminating
+  ;; reserve zero terminating
   int dn_len = dn.slice_bits() + 8;
   
-  ;; check if valid
-  cell cdn_value = in_msg~load_dict();
-  slice dns_hshm = cdn_value.begin_parse();
-  (int cdn_bits, int cdn_refs) = dns_hshm.slice_bits_refs();
+  ;; extract data
+  cell dns_value = in_msg~load_dict();
   int et = in_msg~load_uint(32);
-  int ct = in_msg~load_uint(32);
+  int ct = in_msg.preload_uint(32);
 
   ;; check whether it is current contract responsibility
   (int len, cell dns_record) = dnsresolve(dn, 0);
@@ -266,18 +277,20 @@ int lnow() method_id {
 
     ;; look for methods
     slice rsl = dns_record.begin_parse();
-    (int mn, int wc, slice rsl_addr) = (rsl~load_int(32), rsl~load_int(8), rsl~load_bits(256));
+    (int wc, slice rsl_addr) = (rsl~load_int(8), rsl~load_bits(256));
 
     ;; create msg
     cell msg_body = begin_cell()
       .store_ref(begin_cell().store_slice(dn.skip_bits(len * 8)).end_cell())
-      .store_dict(cdn_value)
+      .store_dict(dns_value)
       .store_uint(et, 32)
       .store_uint(ct, 32)
       .end_cell();
+    ;; carry all remaining msg_value
     return send_message(0xc4ff, 17, rsl_addr, 0x726567, query_id, msg_body.begin_parse(), 0, 64);
   }
 
+  ;; check if record exist
   ifnot (dns_record.null?()) {
     ;; restore time
     cell tm_rcd = dns_record.idict_get_ref(16, 0);
@@ -289,13 +302,16 @@ int lnow() method_id {
     }
   }
 
-  ;; check params
+  ;; check price
+  slice hshm = dns_value.begin_parse();
+  (int cdn_bits, int cdn_refs) = hshm.slice_bits_refs();
   (int price) = calc_cost(et, ct, cdn_bits, cdn_refs);
 
   throw_unless(90, price < msg_value);
   
-  cdn_value~idict_set_ref(16, 0, begin_cell().store_uint(std_time + et, 32).store_uint(ct, 32).end_cell());
-  slice dn_value = begin_cell().store_dict(cdn_value).end_cell().begin_parse();
+  ;; update dns record
+  dns_value~idict_set_ref(16, 0, begin_cell().store_uint(std_time + et, 32).store_uint(ct, 32).end_cell());
+  slice dn_value = begin_cell().store_dict(dns_value).end_cell().begin_parse();
   dnst~prxdict_set(1023, begin_cell().store_slice(dn).set_zeros(8).end_cell().begin_parse(), dn_value);
   store_data(stored_seqno + 1, dnst, pk, std_time, std_payment, std_change_payment, ext_tm_payment, ext_bit_payment, ext_ref_payment);
 }
@@ -310,6 +326,7 @@ int lnow() method_id {
   throw_unless(33, msg_seqno == stored_seqno);
   throw_unless(34, check_signature(slice_hash(in_msg), signature, pk));
   accept_message();
+  ;; allows owner to withdraw profit
   if (cs.slice_refs()) {
     var mode = cs~load_uint(8);
     send_raw_message(cs~load_ref(), mode);
@@ -365,7 +382,6 @@ int lnow() method_id {
       .store_uint(len, 32)
       .store_ref(dns_record)
       .end_cell();
-    ;;return send_message(0x18, 6, begin_cell().end_cell(), 0x726569, query_id, msg_body.begin_parse(), 0, 64);
   
     var msg = begin_cell()
     .store_uint(0x30, 6)
@@ -373,7 +389,6 @@ int lnow() method_id {
     .store_uint(query_id, 64)
     .store_slice(msg_body.begin_parse());
     send_raw_message(msg.end_cell(), 3);
-    ;;return send_message(0x18, 6, s_addr, 0x726569, query_id, msg_body.begin_parse(), 0, 64);
   }  
   return ();
 }
@@ -382,4 +397,17 @@ int lnow() method_id {
 
 int seqno() method_id {
   return get_data().begin_parse().preload_uint(32);
+}
+
+(int) getexpirationtime(slice dn) method_id {
+  (int len, cell dns_record) = dnsresolve(dn, 0);
+  int dn_len = dn.slice_bits() + 8;
+  if (dn_len / 8 == len) {
+    cell tm_rcd = dns_record.idict_get_ref(16, 0);
+    if (tm_rcd.null?()) {
+      return (-1);
+    }
+    return (tm_rcd.begin_parse().preload_uint(32));    
+  }
+  return (-1);
 }

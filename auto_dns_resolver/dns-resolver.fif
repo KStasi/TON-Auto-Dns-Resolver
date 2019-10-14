@@ -13,7 +13,7 @@ $2 parse-int =: c
 def? $3 { @' $3 } { "dns-resolver-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-resolver message is set to " query_id . cr
-<b dn $, 0 8 u, b>
+<b dn $, b>
 <b 0x726568 32 u, query_id 64 u, 1 roll ref, c 16 i, b>
 cr ."Message body is " dup <s csr. cr
 

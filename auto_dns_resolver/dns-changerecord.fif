@@ -16,10 +16,10 @@ $5 bounce parse-load-address =: bounce 2=: ow
 def? $6 { @' $6 } { "dns-changerecord-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-changerecord message is set to " query_id . cr
-<b mn 32 i, i addr, ow addr, b> 
+<b i addr, ow addr, b> 
 <b swap ref, b>
 <s c dictnew 16 idict! drop
-<b dn $, 0 8 u, b>
+<b dn $, b>
 <b 0x726570 32 u, query_id 64 u, 1 roll ref, 0 1 u, 1 roll dict, b>
 cr ."Message body is " dup <s csr. cr
 

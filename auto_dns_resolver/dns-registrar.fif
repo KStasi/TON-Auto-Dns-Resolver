@@ -20,10 +20,10 @@ constant ct
 def? $8 { @' $8 } { "dns-registrar-query.boc" } cond constant output_fname
 now constant query_id
 ."query_id for dns-registrar message is set to " query_id . cr
-<b mn 32 i, i addr, ow addr, b> 
+<b i addr, ow addr, b> 
 <b swap ref, b>
 <s c dictnew 16 idict! drop
-<b dn $, 0 8 u, dn $, b>
+<b dn $, b>
 <b 0x726567 32 u, query_id 64 u, 1 roll ref, 1 roll dict, et 32 u, ct 32 u, b>
 cr ."Message body is " dup <s csr. cr
 
