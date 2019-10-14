@@ -16,7 +16,6 @@ def get_address(file_base, is_bounceable):
 
 # export neccessary env variables
 screen_name = os.environ.get('SCREEN_NAME')
-lite_client_info= os.environ.get('LITE_CLIENT_INFO')
 query_path = os.environ.get('QUERY_PATH')
 
 # export args
@@ -35,7 +34,7 @@ dns_address = get_address(dns_name, len(sys.argv) > 4)
 screen_cmd = 'screen -S {} -p 0 -X stuff '.format(screen_name)
 get_seqno_cmd = '"runmethod {} seqno \n"'.format(wallet_address)
 send_query = screen_cmd +'"sendfile {}{}-query.boc\n"'
-make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}/{}"\n'.format(screen_name, os.getcwd(), lite_client_info)
+make_hardcopy = 'screen -S {} -p 0 -X hardcopy "{}/hardscreen"\n'.format(screen_name, os.getcwd())
 last = '"last\n"'
 
 # get wallet seqno
@@ -45,7 +44,7 @@ os.system(screen_cmd + get_seqno_cmd)
 time.sleep(1)   
 os.system(make_hardcopy)
 time.sleep(1)   
-with open(os.getcwd() +"/"+ lite_client_info) as c:
+with open(os.getcwd() +"/hardscreen") as c:
     content = c.read()
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
 
