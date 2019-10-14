@@ -33,7 +33,7 @@ source ./env
 # python ${SCRIPTS_PATH}send-cmd.py 1.5 dns1 main-wallet dns-registrar-query.boc
 
 # check if two-level domain name ("start\0end\0") can be resolved & 
-# 0x656E64 ("end") was registred on dns2 mannually
+# 0x656E64 ("end") was registred on dns2 manually
 # also try send massage to trigger dns resolver
 # results are send to "nowhere" but search will trigger both dns 
 # fift -s ${AUTO_DNS_PATH}dns-resolver.fif 72 0x737461727400656E64 0
