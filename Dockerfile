@@ -25,3 +25,10 @@ RUN cd ~/liteclient-build && \
   echo '#!/bin/sh' > ./lite_client_start.sh && \
   echo './lite-client/lite-client -C ton-lite-client-test1.config.json' >> ./lite_client_start.sh && \
   chmod +x ./lite_client_start.sh 
+
+RUN mkdir dich4
+
+COPY . /root/dich4
+
+CMD cd ~/liteclient-build && \
+  screen -mS lite-client ./lite_client_start.sh
