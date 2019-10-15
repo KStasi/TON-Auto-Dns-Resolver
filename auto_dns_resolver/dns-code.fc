@@ -7,10 +7,6 @@
 (cell, (int)) ~prxdict_set(cell dict, int key_len, slice index, slice value) asm(value index dict key_len) "PFXDICTSET";
 (builder) set_zeros(builder b, int n) asm "STZEROES";
 
-int lnow() method_id {
-  return 1570558743;
-}
-
 ;; load persistant data
 (int, cell, int, int, int, int, int, int, int) load_data() {
   slice cs = get_data().begin_parse();
@@ -86,7 +82,7 @@ int lnow() method_id {
 }
 
 ;; look up dns record by domain name
-(int, cell) dnsresolve(slice dn, int c) impure method_id(-7) {
+(int, cell) dnsresolve(slice dn, int c) impure method_id {
   ;; extarct data
   (int stored_seqno, cell dnst, slice other) = load_short_data();
 
