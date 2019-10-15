@@ -196,11 +196,15 @@ To sum up, current solution supports next features:
 - total registrar price calculator;
 - price list getter;
 - method to change owned dns record;
-- method tho expand expiration time;
+- method to expand expiration time;
 - method to withdraw profit (for dns resolver owner);
 - scripts to create new resolvers;
 - scripts for all supported requests;
 - automated testing;
 - Docker support.
 
-Todo%
+Todo:
+- method for contract owner to update prices;
+- more effective storage managment(check if refs are more efective);
+- clarify variable names in contract; 
+- testing without deployment.
