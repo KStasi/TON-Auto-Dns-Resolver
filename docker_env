@@ -1,5 +1,5 @@
 
-export LITE_CLIENT_INFO_PATH="../smart_contracts_test/"
+export LITE_CLIENT_INFO_PATH="../tests/"
 export DNS_INFO_PATH="./dns_info"
 export LITE_CLIENT_INFO="hardscreen"
 export SCREEN_NAME="lite-client"
