@@ -80,8 +80,9 @@ The expiration time of some subdomain can be found with `(int) getexpirationtime
 
 And standart `int seqno()` was also added.
 
+## Testing on Host
 
-## Preparation For Testing
+### Preparation For Testing
 
 For deploying and triggering smart the light-client should be installed. The manual installation instructions can be found here https://test.ton.org/README.txt or prerequirement_scripts/1_install.sh can be used. 
 
@@ -95,7 +96,7 @@ To sum up:
 1.  install light-client;
 2.  launch screen session with light-client.
 
-## Auto Testing
+### Auto Testing
 
 Open terminal and go to tests/.
 
@@ -116,6 +117,15 @@ Test descriptions are placed in file itself. Note: it uses sleep 10 to wait for 
 ## Manual Testing
 
 ## DNS persistent data
+
+The data is stored as folloving:
+
+```
+storage$_ seqno:uint32 dns_table:PrefixxDictionary owner_pk:uin32
+	std_registration_time:uint32 std_registration_payment:uint6, std_change_payment:uint6, extra_time_payment:uint6, int extra_bit_payment::uint6, extra_reference_payment:uint6 = Storage;
+```
+
+As for the payment it stores power of 2 which we need to calculate real price. It allowes to store data compactly. Howewer it is less flexible. 
 
 ## Error Management
 
