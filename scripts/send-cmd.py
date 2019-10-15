@@ -50,7 +50,7 @@ with open(os.getcwd() +"/hardscreen") as c:
     seqno = re.findall('result:  \[ (.+) \]', content)[-1]
 
 # fund DNS
-if 'testgiver.fif':
+if script_name == 'testgiver':
     wallet_name = ''
 os.system('fift -s {}.fif {} {} {} {} {}'.format(script_name, wallet_name, dns_address, seqno, amount_to_send, attached_boc))
 os.system(send_query.format(query_path, script_name))
