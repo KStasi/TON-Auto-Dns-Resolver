@@ -143,3 +143,48 @@ In order to provide clearer feedback for users sone custom error were added.
 97 - attempt to registr subdomain wich is still active.
 
 ## How is it working?
+
+## Docker
+
+You can setup automatically test environment with provided Dockerfile and supplementary scripts.
+
+### How to setup (easy way)
+
+    docker build -t dns_resolver .
+    docker run -it -d dns_resolver > DOCKER_ID
+    docker exec -t -i `cat ./DOCKER_ID` /bin/bash
+
+### How to setup docker (harder but useful for regular rebuild)
+
+First time you do almost the same
+
+    ./docker_build.sh
+    ./docker_create.sh
+    ./docker_ssh.sh
+
+But if you want rebuild container you can use
+
+    # Note it will ask for confirmation. Press enter
+    ./docker_drop.sh
+    ./docker_build.sh
+    ./docker_create.sh
+    ./docker_ssh.sh
+
+or you can use "quick loop" script
+
+    ./docker_q_loop.sh
+
+### How to update
+
+Simply update/increment date string in Dockerfile `RUN echo '14.10.2019' && apt-get update`.
+After update it will not use old cached images, but will build almost from scratch.
+
+### How to perform tests even outside docker
+
+Container simply starts lite-client and have embedded repository at last steps of creation.
+
+    cd ./docker_test
+    ./docker_test.sh 2>&1 | tee docker_test.log
+
+It's more useful because you will have run logs on host. If lite-client will down it's problematic to access dead container's filesystem. With this recipe your life would be easier. Also docker_test includes mini-faucet which will fill your newly created wallet pair. Only prerequirement. Please check `kf-BdKbgJX301tRz0Z1wGRU2kdMFOqniu1TXOVpyhGWYmK9A` address before calling docker_test.sh. You can check balance with script `docker_faucet_check_balance.sh`
+   
