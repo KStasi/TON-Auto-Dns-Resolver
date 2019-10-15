@@ -48,17 +48,38 @@ The function for subdomain name registration is `() dnsregistrar(int query_id, i
 
 For now `() recv_external(slice in_msg)` allows owner to execute any actions. This method is expected to be used to withdraw DNS resolver profit.
 
-`() recv_internal(int msg_value, cell in_msg_cell, slice in_msg)`
+`() recv_internal(int msg_value, cell in_msg_cell, slice in_msg)` expects the massege body with the following structure:
 
-`(int, int, int, int, int, int) getpayment()` 
+```
+dns_registratr$_  domain_name:^Cell
+	dns_record:(HashmapE 16 ^DNSRecord) extra_registrar_time:uint32 = Params;
+```
 
-`(int, cell) dnsresolve(slice dn, int c)`
+```
+dns_change_record$_  domain_name:^Cell
+	data:(Either (HashmapE 16 ^DNSRecord) uint32) = Params;
+```
 
-`(int) calc_cost(int et, int cdn_bits, int cdn_refs)`
+```
+dns_resolver$_  domain_name:^Cell
+	cathegory:uint32 = Params;
+```
 
-`int seqno()`
+```
+msg_body$_ {X:Type} op:uint32
+	query_id:uint64 body:Params = X;
+```
 
-`(int) getexpirationtime(slice dn)`
+`(int, int, int, int, int, int) getpayment()` is a getter for standart registration time and payments for each bit, ref and extra registration time along with price for modification record in the future.
+
+To predict the total price for dsubdomain registration the getter `(int) calc_cost(int et, int cdn_bits, int cdn_refs)` was implemented.
+
+To look up for subdomain info `(int, cell) dnsresolve(slice dn, int c)` was inmblemented, it takes subdomain and cathegory to look up and returns the result or next resolver info for the biggist sequence found.
+
+The expiration time of some subdomain can be found with `(int) getexpirationtime(slice dn)`.
+
+And standart `int seqno()` was also added.
+
 
 ## Preparation For Testing
 
