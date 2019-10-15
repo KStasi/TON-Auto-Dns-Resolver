@@ -178,10 +178,29 @@ As for the payment it stores power of 2 which we need to calculate real price. I
 In order to provide clearer feedback for users sone custom error were added.
 
 90 - msg_value is lower than price;  
-91 - time cathegory isn't defined;  
-92 - zeros misssing(deprecated);
-93 - expiration time is too low(deprecated);
-94 - auth failed;
-95 - dns record do not exist;
-96 - owner is not defined;
+91 - time cathegory isn't defined;
+92 - zeros misssing(deprecated);	
+93 - expiration time is too low(deprecated);	
+94 - auth failed;	
+95 - dns record do not exist;	
+96 - owner is not defined;	
 97 - attempt to registr subdomain wich is still active.
+
+## Conclusion
+
+To sum up, current solution supports next features:
+- simple subdomain registrar;
+- recursive subdomain registrar;
+- pure dns resolver (may be run off-chain);
+- recursive dns resolver (with look up request to other dns resolvers and result massages to nowhere);
+- total registrar price calculator;
+- price list getter;
+- method to change owned dns record;
+- method tho expand expiration time;
+- method to withdraw profit (for dns resolver owner);
+- scripts to create new resolvers;
+- scripts for all supported requests;
+- automated testing;
+- Docker support.
+
+Todo%
