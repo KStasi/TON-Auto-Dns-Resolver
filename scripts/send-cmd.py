@@ -24,7 +24,7 @@ dns_name = sys.argv[2]
 wallet_name = sys.argv[3]
 script_name = sys.argv[4]
 if (len(sys.argv) > 5):
-    attached_boc = '-B {}'.format(sys.argv[4])
+    attached_boc = '-B {}'.format(sys.argv[5])
 else:
     attached_boc = ''
 
