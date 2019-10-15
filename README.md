@@ -116,6 +116,8 @@ Test descriptions are placed in file itself. Note: it uses sleep 10 to wait for 
  
 ## Manual Testing
 
+ 
+
 ## DNS persistent data
 
 The data is stored as folloving:
@@ -128,5 +130,16 @@ storage$_ seqno:uint32 dns_table:PrefixxDictionary owner_pk:uin32
 As for the payment it stores power of 2 which we need to calculate real price. It allowes to store data compactly. Howewer it is less flexible. 
 
 ## Error Management
+
+In order to provide clearer feedback for users sone custom error were added.
+
+90 - msg_value is lower than price;  
+91 - time cathegory isn't defined;  
+92 - zeros misssing(deprecated);
+93 - expiration time is too low(deprecated);
+94 - auth failed;
+95 - dns record do not exist;
+96 - owner is not defined;
+97 - attempt to registr subdomain wich is still active.
 
 ## How is it working?
