@@ -80,70 +80,6 @@ The expiration time of some subdomain can be found with `(int) getexpirationtime
 
 And standart `int seqno()` was also added.
 
-## Testing on Host
-
-### Preparation For Testing
-
-For deploying and triggering smart the light-client should be installed. The manual installation instructions can be found here https://test.ton.org/README.txt or prerequirement_scripts/1_install.sh can be used. 
-
-As during automatic testing the light-client commands should be executed it is advised to use screen session. Use prerequirement_scripts/2_launch.sh and specify SCREEN_NAME in tests/env.
-
-Deprecated: Two wallets are also needed. Their .addr and .pk can be placed in tests folder or new ones can be generated with prerequirement_scripts/3_create_wallet.sh, funded and then their code may be broadcasted with prerequirement_scripts/5_send_wallet_boc.sh. Note: wallets info should be named "main-wallet" and "secondary-wallet" and stored in tests folder.
-
-For now wallets are created during testing and are funded with own test giver (it isn't very rich but enough for few test iterations, yoi may fund it as well;)).
- 
-To sum up:
-1.  install light-client;
-2.  launch screen session with light-client.
-
-### Auto Testing
-
-Open terminal and go to tests/.
-
-Configure the env file. The variables must be mentioned:
-	SCREEN_NAME - name of the light-client screen session
-	QUERY_PATH - path to place where generated .boc files are stored (  for testing, should be the absolute path to tests/ .
-
-Add executable permissions for test.sh
-```
-chmod +x test.sh 
-```
-run it:
-```
-./test.sh
-```
-Test descriptions are placed in file itself. Note: it uses sleep 10 to wait for the transaction is executed but it may not be enough or any other connection error can occur. We don't pretend it is a great way for testing.
- 
-## Manual Testing
-
- 
-
-## DNS persistent data
-
-The data is stored as folloving:
-
-```
-storage$_ seqno:uint32 dns_table:PrefixxDictionary owner_pk:uin32
-	std_registration_time:uint32 std_registration_payment:uint6, std_change_payment:uint6, extra_time_payment:uint6, int extra_bit_payment::uint6, extra_reference_payment:uint6 = Storage;
-```
-
-As for the payment it stores power of 2 which we need to calculate real price. It allowes to store data compactly. Howewer it is less flexible. 
-
-## Error Management
-
-In order to provide clearer feedback for users sone custom error were added.
-
-90 - msg_value is lower than price;  
-91 - time cathegory isn't defined;  
-92 - zeros misssing(deprecated);
-93 - expiration time is too low(deprecated);
-94 - auth failed;
-95 - dns record do not exist;
-96 - owner is not defined;
-97 - attempt to registr subdomain wich is still active.
-
-## How is it working?
-
 ## Docker
 
 You can setup automatically test environment with provided Dockerfile and supplementary scripts.
@@ -188,3 +124,64 @@ Container simply starts lite-client and have embedded repository at last steps o
 
 It's more useful because you will have run logs on host. If lite-client will down it's problematic to access dead container's filesystem. With this recipe your life would be easier. Also docker_test includes mini-faucet which will fill your newly created wallet pair. Only prerequirement. Please check `kf-BdKbgJX301tRz0Z1wGRU2kdMFOqniu1TXOVpyhGWYmK9A` address before calling docker_test.sh. You can check balance with script `docker_faucet_check_balance.sh`
    
+## Testing on Host
+
+### Preparation For Testing
+
+For deploying and triggering smart the light-client should be installed. The manual installation instructions can be found here https://test.ton.org/README.txt or prerequirement_scripts/1_install.sh can be used. 
+
+As during automatic testing the light-client commands should be executed it is advised to use screen session. Use prerequirement_scripts/2_launch.sh and specify SCREEN_NAME in tests/env.
+
+Deprecated: Two wallets are also needed. Their .addr and .pk can be placed in tests folder or new ones can be generated with prerequirement_scripts/3_create_wallet.sh, funded and then their code may be broadcasted with prerequirement_scripts/5_send_wallet_boc.sh. Note: wallets info should be named "main-wallet" and "secondary-wallet" and stored in tests folder.
+
+For now wallets are created during testing and are funded with own test giver (it isn't very rich but enough for few test iterations, yoi may fund it as well;)).
+ 
+To sum up:
+1.  install light-client;
+2.  launch screen session with light-client.
+
+### Auto Testing
+
+Open terminal and go to tests/.
+
+Configure the env file. The variables must be mentioned:
+	SCREEN_NAME - name of the light-client screen session
+	QUERY_PATH - path to place where generated .boc files are stored (  for testing, should be the absolute path to tests/ .
+
+Add executable permissions for test.sh
+```
+chmod +x test.sh 
+```
+run it:
+```
+./test.sh
+```
+Test descriptions are placed in file itself. Note: it uses sleep 10 to wait for the transaction is executed but it may not be enough or any other connection error can occur. We don't pretend it is a great way for testing.
+ 
+## Manual Testing
+
+It is useful to run some qet methods on light-client with runmethod. Also withdraw may be tested with simple wallet.fif script. As recv_Ext is basicaly the same.
+
+## DNS persistent data
+
+The data is stored as folloving:
+
+```
+storage$_ seqno:uint32 dns_table:PrefixxDictionary owner_pk:uin32
+	std_registration_time:uint32 std_registration_payment:uint6, std_change_payment:uint6, extra_time_payment:uint6, int extra_bit_payment::uint6, extra_reference_payment:uint6 = Storage;
+```
+
+As for the payment it stores power of 2 which we need to calculate real price. It allowes to store data compactly. Howewer it is less flexible. 
+
+## Error Management
+
+In order to provide clearer feedback for users sone custom error were added.
+
+90 - msg_value is lower than price;  
+91 - time cathegory isn't defined;  
+92 - zeros misssing(deprecated);
+93 - expiration time is too low(deprecated);
+94 - auth failed;
+95 - dns record do not exist;
+96 - owner is not defined;
+97 - attempt to registr subdomain wich is still active.

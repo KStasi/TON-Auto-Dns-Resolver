@@ -16,7 +16,7 @@ def get_address(file_base, is_bounceable):
 
 # export neccessary env variables
 screen_name = os.environ.get('SCREEN_NAME')
-query_path = os.getcwd() + os.environ.get('QUERY_PATH')
+query_path = os.getcwd() + "/" + os.environ.get('QUERY_PATH')
 
 # export args
 amount_to_send = sys.argv[1]
